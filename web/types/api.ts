@@ -41,7 +41,7 @@ export interface VizManifest {
 }
 
 export interface VizPhase {
-  phaseId: string
+  phaseId: string  // phase enum value e.g. "powder_distribution"
   phaseName: string
   sequence: number
   isComplete: boolean

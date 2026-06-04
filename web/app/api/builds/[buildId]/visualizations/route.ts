@@ -95,7 +95,7 @@ export async function GET(
     }))
 
     return {
-      phaseId: phase.id,
+      phaseId: phase.phase,
       phaseName: PHASE_DISPLAY[phase.phase as keyof typeof PHASE_DISPLAY] ?? phase.phase,
       sequence: phase.sequence,
       isComplete: phase.is_complete,
