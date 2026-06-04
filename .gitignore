@@ -1,0 +1,26 @@
+# Local reference datasets — keep on disk, never commit
+Data Set/
+
+# Dependencies and build output
+node_modules/
+.next/
+out/
+dist/
+build/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# OS and editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Logs and caches
+*.log
+.cache/
+.turbo/
