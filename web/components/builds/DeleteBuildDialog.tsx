@@ -57,14 +57,12 @@ export function DeleteBuildDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Delete build?</DialogTitle>
-          <DialogDescription asChild>
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <p>
-                This will permanently delete <span className="font-medium text-foreground">{buildName}</span> and
-                all associated data, including phases, artifacts, notes, and uploaded files.
-              </p>
-              <p className="font-medium text-destructive">This action cannot be reversed.</p>
-            </div>
+          <DialogDescription className="space-y-2">
+            <p>
+              This will permanently delete <span className="font-medium text-foreground">{buildName}</span> and
+              all associated data, including phases, artifacts, notes, and uploaded files.
+            </p>
+            <p className="font-medium text-destructive">This action cannot be reversed.</p>
           </DialogDescription>
         </DialogHeader>
 

@@ -75,7 +75,7 @@ async function collectBuildStoragePaths(
 
   paths.push(...(references ?? []).map(r => r.storage_path).filter(Boolean))
 
-  return [...new Set(paths)]
+  return Array.from(new Set(paths))
 }
 
 // GET /api/builds/[buildId]

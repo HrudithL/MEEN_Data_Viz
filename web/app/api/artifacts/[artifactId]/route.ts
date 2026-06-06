@@ -66,7 +66,7 @@ export async function GET(
         .eq('artifact_id', artifactId)
         .eq('version_number', artifact.current_version)
 
-      artifact = { ...artifact, parsed_json: updatedParsedJson }
+      artifact = { ...artifact, parsed_json: updatedParsedJson as never }
     }
   }
 
