@@ -10,7 +10,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { format, parseISO } from 'date-fns'
+import { format } from 'date-fns'
 
 interface UploadActivityChartProps {
   uploadsByDay: { date: string; count: number }[]
@@ -20,7 +20,7 @@ export function UploadActivityChart({ uploadsByDay }: UploadActivityChartProps) 
   const data = uploadsByDay.map((d, index) => ({
     ...d,
     index,
-    label: format(parseISO(d.date), 'MMM d'),
+    label: format(new Date(`${d.date}T12:00:00`), 'MMM d'),
   }))
 
   return (

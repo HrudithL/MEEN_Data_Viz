@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { PHASE_IDS } from '@/lib/constants'
+import { startOfLocalDay, toLocalDateKey } from '@/lib/utils'
 import type { DashboardStats } from '@/types/api'
 
 export async function getDashboardStats(orgId: string): Promise<DashboardStats | null> {
@@ -66,13 +67,14 @@ export async function getDashboardStats(orgId: string): Promise<DashboardStats |
     .gte('uploaded_at', fourteenDaysAgo)
 
   const dayCounts = new Map<string, number>()
+  const today = startOfLocalDay(new Date())
   for (let i = 13; i >= 0; i--) {
-    const d = new Date()
-    d.setDate(d.getDate() - i)
-    dayCounts.set(d.toISOString().slice(0, 10), 0)
+    const d = new Date(today)
+    d.setDate(today.getDate() - i)
+    dayCounts.set(toLocalDateKey(d), 0)
   }
   for (const u of recentUploads ?? []) {
-    const day = (u.uploaded_at as string).slice(0, 10)
+    const day = toLocalDateKey(new Date(u.uploaded_at as string))
     if (dayCounts.has(day)) dayCounts.set(day, (dayCounts.get(day) ?? 0) + 1)
   }
   const uploadsByDay = Array.from(dayCounts.entries()).map(([date, count]) => ({ date, count }))

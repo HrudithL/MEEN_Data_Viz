@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { apiError, isRejectedExtension } from '@/lib/utils'
 import { insertChangelog } from '@/lib/changelog'
 import { parseArtifact } from '@/lib/parsers'
+import { parseAndStoreTiffZip } from '@/lib/parsers/tiff-zip'
 import { PHASE_ACCEPTED_TYPES } from '@/lib/constants'
 import type { PhaseIdEnum } from '@/types/database'
 
@@ -114,7 +115,16 @@ export async function POST(
 
     if (!downloadError && fileData) {
       const buffer = Buffer.from(await fileData.arrayBuffer())
-      const parseResult = await parseArtifact(buffer, fileType, { ebsdFormat })
+      const parseResult =
+        fileType === 'tiff_zip'
+          ? await parseAndStoreTiffZip(buffer, {
+              serviceSb,
+              orgId: ctx.orgId,
+              buildId: ctx.buildId,
+              phaseId: ctx.phaseId,
+              artifactId,
+            })
+          : await parseArtifact(buffer, fileType, { ebsdFormat })
 
       await serviceSb
         .from('artifact_versions')

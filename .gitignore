@@ -1,3 +1,6 @@
+# Local planning docs — keep on disk, never commit
+.planning/
+
 # Local reference datasets — keep on disk, never commit
 Data Set/
 

@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { apiError } from '@/lib/utils'
 import { insertChangelog } from '@/lib/changelog'
 import { recomputeBuildStatus } from '@/lib/build-status'
+import { ensureTiffSlicePaths } from '@/lib/parsers/tiff-zip'
 
 async function getArtifactContext(supabase: Awaited<ReturnType<typeof createClient>>, artifactId: string) {
   const { data } = await supabase
@@ -38,7 +39,38 @@ export async function GET(
   const { data: canView } = await supabase.rpc('can_view_org', { p_org_id: ctx.orgId })
   if (!canView) return apiError('FORBIDDEN', 'Access denied', 403)
 
-  return Response.json({ data: ctx.artifact })
+  let artifact = ctx.artifact
+  if (artifact.file_type === 'tiff_zip') {
+    const serviceSb = createServiceClient()
+    const updatedParsedJson = await ensureTiffSlicePaths(
+      {
+        serviceSb,
+        orgId: ctx.orgId,
+        buildId: ctx.buildId,
+        phaseId: ctx.phaseId,
+        artifactId,
+      },
+      artifact.storage_path,
+      artifact.parsed_json
+    )
+
+    if (JSON.stringify(updatedParsedJson) !== JSON.stringify(artifact.parsed_json)) {
+      await serviceSb
+        .from('artifacts')
+        .update({ parsed_json: updatedParsedJson as never })
+        .eq('id', artifactId)
+
+      await serviceSb
+        .from('artifact_versions')
+        .update({ parsed_json: updatedParsedJson as never })
+        .eq('artifact_id', artifactId)
+        .eq('version_number', artifact.current_version)
+
+      artifact = { ...artifact, parsed_json: updatedParsedJson }
+    }
+  }
+
+  return Response.json({ data: artifact })
 }
 
 // PATCH /api/artifacts/[artifactId]
