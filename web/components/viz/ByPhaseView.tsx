@@ -11,12 +11,12 @@ interface ByPhaseViewProps {
 
 export function ByPhaseView({ manifest }: ByPhaseViewProps) {
   const phaseByKey = new Map<string, VizPhase>(
-    manifest.phases.map(p => [p.phaseId, p])
+    (manifest.phases ?? []).map(p => [p.phaseId, p])
   )
 
   return (
     <div className="space-y-3">
-      {PHASE_IDS.map((phaseKey, index) => {
+      {PHASE_IDS.map(phaseKey => {
         const vizPhase = phaseByKey.get(phaseKey)
 
         if (!vizPhase) {
@@ -35,7 +35,7 @@ export function ByPhaseView({ manifest }: ByPhaseViewProps) {
             key={phaseKey}
             vizPhase={vizPhase}
             phaseKey={phaseKey as PhaseIdEnum}
-            defaultOpen={index === 0}
+            defaultOpen={false}
           />
         )
       })}

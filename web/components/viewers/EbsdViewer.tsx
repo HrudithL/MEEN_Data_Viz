@@ -138,7 +138,10 @@ export function EbsdViewer({ parsedJson, density = 'full' }: EbsdViewerProps) {
       </div>
 
       {/* Canvas */}
-      <div className="rounded-md border overflow-hidden bg-zinc-950 flex items-center justify-center" style={{ minHeight: canvasHeight }}>
+      <div className="relative rounded-md border overflow-hidden bg-zinc-950 flex items-center justify-center" style={{ minHeight: canvasHeight }}>
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+          <span className="text-4xl font-black tracking-widest text-white/20 select-none">TESTING</span>
+        </div>
         {(!data || data.length === 0) ? (
           <p className="text-xs text-muted-foreground">No orientation data available for preview</p>
         ) : (

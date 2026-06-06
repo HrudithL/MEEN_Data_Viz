@@ -4,8 +4,12 @@ import { createClient } from '@/lib/supabase/server'
 import { StatsCards } from '@/components/dashboard/StatsCards'
 import { PhasesBar } from '@/components/dashboard/PhasesBar'
 import { RecentArtifacts } from '@/components/dashboard/RecentArtifacts'
+import { BuildStatusChart } from '@/components/dashboard/BuildStatusChart'
+import { UploadActivityChart } from '@/components/dashboard/UploadActivityChart'
+import { RecentBuildsList } from '@/components/dashboard/RecentBuildsList'
 import { Button } from '@/components/ui/button'
-import { Building2, Plus } from 'lucide-react'
+import { EmptyOrgState } from '@/components/dashboard/EmptyOrgState'
+import { getDashboardStats } from '@/lib/queries/dashboard'
 import type { OrgWithRole, DashboardStats } from '@/types/api'
 
 async function getOrgs(): Promise<OrgWithRole[]> {
@@ -35,24 +39,10 @@ async function getOrgs(): Promise<OrgWithRole[]> {
   }
 }
 
-async function getDashboard(orgId: string): Promise<DashboardStats | null> {
-  try {
-    const base = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-    const res = await fetch(`${base}/api/organizations/${orgId}/dashboard`, {
-      cache: 'no-store',
-    })
-    if (!res.ok) return null
-    const json = await res.json()
-    return json.data ?? null
-  } catch {
-    return null
-  }
-}
-
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: { org?: string }
+  searchParams: { org?: string; create?: string }
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -61,29 +51,11 @@ export default async function DashboardPage({
   const orgs = await getOrgs()
 
   if (orgs.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 p-8 text-center">
-        <div className="p-4 bg-primary/10 rounded-full">
-          <Building2 className="h-10 w-10 text-primary" />
-        </div>
-        <div>
-          <h2 className="text-2xl font-bold mb-2">Welcome to MEEN Data Viz</h2>
-          <p className="text-muted-foreground max-w-md">
-            Create your first organization to start managing materials science experiment builds.
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Button render={<a href="/dashboard?create=org" />}>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Organization
-            </Button>
-        </div>
-      </div>
-    )
+    return <EmptyOrgState defaultOpen={searchParams.create === 'org'} />
   }
 
   const activeOrgId = searchParams.org ?? orgs[0]?.id
-  const stats = await getDashboard(activeOrgId)
+  const stats = await getDashboardStats(activeOrgId)
 
   const emptyStats: DashboardStats = {
     totalBuilds: 0,
@@ -91,6 +63,10 @@ export default async function DashboardPage({
     inProgressBuilds: 0,
     phasesCompleted: new Array(9).fill(0),
     recentArtifacts: [],
+    uploadsByDay: [],
+    recentBuilds: [],
+    totalArtifacts: 0,
+    artifactsThisWeek: 0,
   }
 
   const data = stats ?? emptyStats
@@ -136,10 +112,24 @@ export default async function DashboardPage({
         inProgressBuilds={data.inProgressBuilds}
       />
 
-      {/* Chart */}
-      <PhasesBar phasesCompleted={data.phasesCompleted} />
+      <div className="rounded-lg border p-4">
+        <p className="text-sm text-muted-foreground">Total Artifacts</p>
+        <p className="text-2xl font-bold mt-1">{data.totalArtifacts}</p>
+      </div>
 
-      {/* Recent artifacts */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <PhasesBar phasesCompleted={data.phasesCompleted} />
+        <BuildStatusChart
+          completeBuilds={data.completeBuilds}
+          inProgressBuilds={data.inProgressBuilds}
+        />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <UploadActivityChart uploadsByDay={data.uploadsByDay} />
+        <RecentBuildsList builds={data.recentBuilds} />
+      </div>
+
       <RecentArtifacts artifacts={data.recentArtifacts} />
     </div>
   )

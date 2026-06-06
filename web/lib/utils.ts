@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { REFERENCE_ACCEPTED_EXTENSIONS } from '@/lib/constants'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -25,6 +26,7 @@ export function detectFileType(fileName: string): string | null {
     '.zip': 'tiff_zip',
     '.ang': 'ebsd_ang',
     '.ctf': 'ebsd_ctf',
+    '.mtex': 'mtex',
   }
   return map[ext] ?? null
 }
@@ -32,4 +34,15 @@ export function detectFileType(fileName: string): string | null {
 export function isRejectedExtension(fileName: string): boolean {
   const ext = fileName.toLowerCase().slice(fileName.lastIndexOf('.'))
   return ['.xlsx', '.xls'].includes(ext)
+}
+
+export function fileExtension(fileName: string): string {
+  const idx = fileName.lastIndexOf('.')
+  if (idx === -1) return ''
+  return fileName.slice(idx).toLowerCase()
+}
+
+export function isReferenceExtensionAllowed(fileName: string): boolean {
+  const ext = fileExtension(fileName)
+  return REFERENCE_ACCEPTED_EXTENSIONS.includes(ext as (typeof REFERENCE_ACCEPTED_EXTENSIONS)[number])
 }

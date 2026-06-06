@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { PhasePanel } from '@/components/data/PhasePanel'
+import { ReferenceMaterialPanel } from '@/components/data/ReferenceMaterialPanel'
 import { PHASE_IDS } from '@/lib/constants'
 import type { BuildWithPhases } from '@/types/api'
 import type { PhaseWithArtifacts } from '@/types/api'
@@ -91,6 +92,8 @@ export default function DataPage() {
         </p>
       </div>
 
+      <ReferenceMaterialPanel buildId={buildId} orgId={orgId} canEdit={canEdit} />
+
       {/* Vertical stepper */}
       <div className="space-y-3">
         {PHASE_IDS.map((phaseKey, index) => {
@@ -110,7 +113,7 @@ export default function DataPage() {
               orgId={orgId}
               buildId={buildId}
               canEdit={canEdit}
-              defaultOpen={index === 0}
+              defaultOpen={false}
             />
           )
         })}

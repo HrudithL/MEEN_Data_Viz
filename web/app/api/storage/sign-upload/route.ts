@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { apiError, isRejectedExtension } from '@/lib/utils'
+import { apiError, isReferenceExtensionAllowed, isRejectedExtension } from '@/lib/utils'
 import { MAX_UPLOAD_BYTES } from '@/lib/constants'
 import { randomUUID } from 'crypto'
 
@@ -12,13 +12,37 @@ export async function POST(req: NextRequest) {
   if (authError || !user) return apiError('UNAUTHORIZED', 'Not authenticated', 401)
 
   const body = await req.json().catch(() => null)
-  const { orgId, buildId, phaseId, fileName, fileSize, mimeType } = body ?? {}
+  const { orgId, buildId, phaseId, fileName, fileSize, mimeType, reference, notesImage, notesFile } = body ?? {}
 
-  if (!orgId || !buildId || !phaseId || !fileName) {
-    return apiError('MISSING_FIELDS', 'orgId, buildId, phaseId, and fileName are required')
+  if (!orgId || !buildId || !fileName) {
+    return apiError('MISSING_FIELDS', 'orgId, buildId, and fileName are required')
   }
 
-  if (isRejectedExtension(fileName)) {
+  const isReferenceUpload = reference === true
+  const isNotesImage = notesImage === true
+  const isNotesFile = notesFile === true
+
+  if (!isReferenceUpload && !isNotesImage && !isNotesFile && !phaseId) {
+    return apiError('MISSING_FIELDS', 'phaseId is required for phase artifact uploads')
+  }
+
+  if ((isNotesImage || isNotesFile) && !phaseId) {
+    return apiError('MISSING_FIELDS', 'phaseId is required for notes uploads')
+  }
+
+  if (isNotesFile && !String(fileName).match(/\.(md|txt)$/i)) {
+    return apiError('UNSUPPORTED_FORMAT', 'Notes files must be .md or .txt', 400)
+  }
+
+  if (isNotesImage && !String(fileName).match(/\.(png|jpe?g|gif|webp)$/i)) {
+    return apiError('UNSUPPORTED_FORMAT', 'Notes images must be PNG, JPEG, GIF, or WebP', 400)
+  }
+
+  if (isReferenceUpload && !isReferenceExtensionAllowed(fileName)) {
+    return apiError('UNSUPPORTED_FORMAT', 'File type not allowed for project reference uploads', 400)
+  }
+
+  if (!isReferenceUpload && !isNotesImage && !isNotesFile && isRejectedExtension(fileName)) {
     return apiError('UNSUPPORTED_FORMAT', 'Excel files (.xlsx, .xls) are not supported', 400)
   }
 
@@ -33,8 +57,12 @@ export async function POST(req: NextRequest) {
   const { data: canEdit } = await supabase.rpc('can_edit_org', { p_org_id: orgId })
   if (!canEdit) return apiError('FORBIDDEN', 'Editor or admin required', 403)
 
-  const artifactId = randomUUID()
-  const storagePath = `org/${orgId}/build/${buildId}/phase/${phaseId}/artifact/${artifactId}/v1/${fileName}`
+  const fileId = randomUUID()
+  const storagePath = isReferenceUpload
+    ? `org/${orgId}/build/${buildId}/reference/${fileId}/v1/${fileName}`
+    : isNotesImage || isNotesFile
+      ? `org/${orgId}/build/${buildId}/phase/${phaseId}/notes/${fileId}/${fileName}`
+      : `org/${orgId}/build/${buildId}/phase/${phaseId}/artifact/${fileId}/v1/${fileName}`
 
   const serviceSb = createServiceClient()
   const { data: signed, error: signError } = await serviceSb.storage
@@ -49,7 +77,8 @@ export async function POST(req: NextRequest) {
     data: {
       signedUrl: signed.signedUrl,
       storagePath,
-      artifactId,
+      artifactId: fileId,
+      referenceId: isReferenceUpload ? fileId : undefined,
     },
   })
 }

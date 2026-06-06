@@ -18,8 +18,8 @@ async function fetchSliceUrl(storagePath: string): Promise<string> {
   if (!storagePath) return ''
   const res = await fetch(`/api/storage/sign-download?storagePath=${encodeURIComponent(storagePath)}`)
   if (!res.ok) return ''
-  const data = await res.json() as { signedUrl?: string }
-  return data.signedUrl ?? ''
+  const data = await res.json() as { data?: { signedUrl?: string } }
+  return data.data?.signedUrl ?? ''
 }
 
 export function TiffViewer({ parsedJson, buildId, density = 'full' }: TiffViewerProps) {

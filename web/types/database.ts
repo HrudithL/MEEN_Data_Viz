@@ -166,6 +166,51 @@ export type Database = {
           { foreignKeyName: "builds_organization_id_fkey"; columns: ["organization_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },
         ]
       }
+      build_references: {
+        Row: {
+          id: string
+          build_id: string
+          label: string
+          description: string | null
+          file_name: string
+          file_extension: string
+          storage_path: string
+          file_size: number
+          mime_type: string | null
+          uploaded_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          id?: string
+          build_id: string
+          label?: string
+          description?: string | null
+          file_name: string
+          file_extension: string
+          storage_path: string
+          file_size: number
+          mime_type?: string | null
+          uploaded_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          id?: string
+          build_id?: string
+          label?: string
+          description?: string | null
+          file_name?: string
+          file_extension?: string
+          storage_path?: string
+          file_size?: number
+          mime_type?: string | null
+          uploaded_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          { foreignKeyName: "build_references_build_id_fkey"; columns: ["build_id"]; isOneToOne: false; referencedRelation: "builds"; referencedColumns: ["id"] },
+          { foreignKeyName: "build_references_uploaded_by_fkey"; columns: ["uploaded_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
       changelog: {
         Row: {
           action: Database["public"]["Enums"]["changelog_action"]
@@ -334,6 +379,7 @@ export type Database = {
           id: string
           is_complete: boolean
           notes_json: Json
+          part_notes: Json
           phase: Database["public"]["Enums"]["phase_id"]
           sequence: number
           updated_at: string
@@ -343,6 +389,7 @@ export type Database = {
           id?: string
           is_complete?: boolean
           notes_json?: Json
+          part_notes?: Json
           phase: Database["public"]["Enums"]["phase_id"]
           sequence: number
           updated_at?: string
@@ -352,6 +399,7 @@ export type Database = {
           id?: string
           is_complete?: boolean
           notes_json?: Json
+          part_notes?: Json
           phase?: Database["public"]["Enums"]["phase_id"]
           sequence?: number
           updated_at?: string
@@ -397,8 +445,8 @@ export type Database = {
     Enums: {
       build_status: "in_progress" | "complete"
       changelog_action: "create" | "update" | "delete" | "invite" | "invite_accept" | "role_change" | "admin_transfer" | "version_create"
-      changelog_entity: "organization" | "build" | "phase" | "artifact" | "artifact_version" | "supplement" | "column_dictionary" | "membership" | "invitation" | "notes"
-      file_type: "csv" | "stl" | "png" | "ply" | "tiff_zip" | "ebsd_ang" | "ebsd_ctf"
+      changelog_entity: "organization" | "build" | "phase" | "artifact" | "artifact_version" | "supplement" | "column_dictionary" | "membership" | "invitation" | "notes" | "reference"
+      file_type: "csv" | "stl" | "png" | "ply" | "tiff_zip" | "ebsd_ang" | "ebsd_ctf" | "mtex"
       org_role: "admin" | "editor" | "viewer"
       parse_status: "ok" | "partial" | "failed"
       phase_id: "powder_distribution" | "specimen_geometry" | "build_plate" | "microstructure" | "grain_size" | "defect_analysis" | "tensile_testing" | "fatigue_testing" | "fracture_mechanics"
@@ -426,8 +474,12 @@ export type ParsedJson =
   | { kind: "image"; format: "png"; width: number; height: number }
   | { kind: "ebsd_grid"; format: "ang" | "ctf"; width: number; height: number; phases: string[]; stepSize?: number; cols?: number; rows?: number; data?: { x: number; y: number; phi1: number; PHI: number; phi2: number; phaseIndex: number }[] }
   | { kind: "slice_stack"; sliceCount: number; slices: { index: number; storagePath: string }[] }
+  | { kind: "mtex_map"; format: "mtex"; fileSize: number }
 
-export type RichTextBlock = { type: "paragraph" | "bullet"; text: string; bold?: boolean; italic?: boolean }
+export type RichTextBlock =
+  | { type: "paragraph" | "bullet"; text: string; bold?: boolean; italic?: boolean }
+  | { type: "image"; storagePath: string; fileName: string; caption?: string }
+  | { type: "file"; storagePath: string; fileName: string; fileSize: number; label?: string; updatedAt?: string }
 export type NotesJson = { format: "richtext_v1"; blocks: RichTextBlock[] }
 export type ColumnDictionary = Record<string, { type: string; unit?: string; displayName?: string }>
 
@@ -437,6 +489,7 @@ export type Organization = Database["public"]["Tables"]["organizations"]["Row"]
 export type OrganizationMember = Database["public"]["Tables"]["organization_members"]["Row"]
 export type OrganizationInvitation = Database["public"]["Tables"]["organization_invitations"]["Row"]
 export type Build = Database["public"]["Tables"]["builds"]["Row"]
+export type BuildReference = Database["public"]["Tables"]["build_references"]["Row"]
 export type Phase = Database["public"]["Tables"]["phases"]["Row"]
 export type Artifact = Database["public"]["Tables"]["artifacts"]["Row"]
 export type ArtifactVersion = Database["public"]["Tables"]["artifact_versions"]["Row"]

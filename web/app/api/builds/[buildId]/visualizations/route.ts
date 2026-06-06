@@ -27,7 +27,6 @@ export async function GET(
 
   const { searchParams } = new URL(req.url)
   const mode = (searchParams.get('mode') ?? 'by_phase') as 'by_phase' | 'compare'
-  const filterLabel = searchParams.get('label')
   const filterShieldGas = searchParams.get('shield_gas')
   const filterHeatTreatment = searchParams.get('heat_treatment')
   const filterProcessParameters = searchParams.get('process_parameters')
@@ -42,16 +41,26 @@ export async function GET(
 
   const phaseIds = (phases ?? []).map((p) => p.id)
 
-  const { data: allArtifacts } = await supabase
-    .from('artifacts')
-    .select('*')
-    .in('phase_id', phaseIds)
-    .order('uploaded_at', { ascending: true })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let allArtifacts: any[] = []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let allSupplements: any[] = []
 
-  const { data: allSupplements } = await supabase
-    .from('phase_supplements')
-    .select('*')
-    .in('phase_id', phaseIds)
+  if (phaseIds.length > 0) {
+    const { data: artifacts } = await supabase
+      .from('artifacts')
+      .select('*')
+      .in('phase_id', phaseIds)
+      .order('uploaded_at', { ascending: true })
+
+    const { data: supplements } = await supabase
+      .from('phase_supplements')
+      .select('*')
+      .in('phase_id', phaseIds)
+
+    allArtifacts = artifacts ?? []
+    allSupplements = supplements ?? []
+  }
 
   // Build sets of distinct labels and metadata values
   const distinctLabels = new Set<string>()
@@ -72,7 +81,6 @@ export async function GET(
 
     // Apply compare mode filters
     if (mode === 'compare') {
-      if (filterLabel) phaseArtifacts = phaseArtifacts.filter((a) => a.label === filterLabel)
       if (filterShieldGas) phaseArtifacts = phaseArtifacts.filter((a) => (a.metadata as any)?.shield_gas === filterShieldGas)
       if (filterHeatTreatment) phaseArtifacts = phaseArtifacts.filter((a) => (a.metadata as any)?.heat_treatment === filterHeatTreatment)
       if (filterProcessParameters) phaseArtifacts = phaseArtifacts.filter((a) => (a.metadata as any)?.process_parameters === filterProcessParameters)

@@ -1,9 +1,13 @@
 import { redirect } from 'next/navigation'
 import { FlaskConical } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { BuildCard } from '@/components/builds/BuildCard'
+import { BuildsList } from '@/components/builds/BuildsList'
 import { CreateBuildDialog } from '@/components/builds/CreateBuildDialog'
-import type { OrgWithRole, BuildWithPhases } from '@/types/api'
+import { getBuildsForOrg } from '@/lib/queries/builds'
+import type { OrgWithRole } from '@/types/api'
+import type { BuildWithProgress } from '@/lib/queries/builds'
+
+export const dynamic = 'force-dynamic'
 
 async function getOrgs(userId: string): Promise<OrgWithRole[]> {
   try {
@@ -29,20 +33,6 @@ async function getOrgs(userId: string): Promise<OrgWithRole[]> {
   }
 }
 
-async function getBuilds(orgId: string): Promise<BuildWithPhases[]> {
-  try {
-    const base = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-    const res = await fetch(`${base}/api/organizations/${orgId}/builds`, {
-      cache: 'no-store',
-    })
-    if (!res.ok) return []
-    const json = await res.json()
-    return json.data ?? []
-  } catch {
-    return []
-  }
-}
-
 export default async function BuildsPage({
   searchParams,
 }: {
@@ -60,8 +50,9 @@ export default async function BuildsPage({
   const activeOrgId = searchParams.org ?? orgs[0]?.id
   const activeOrg = orgs.find(o => o.id === activeOrgId) ?? orgs[0]
   const canEdit = activeOrg?.role === 'admin' || activeOrg?.role === 'editor'
+  const canDelete = activeOrg?.role === 'admin'
 
-  const builds = await getBuilds(activeOrg?.id ?? '')
+  const builds: BuildWithProgress[] = await getBuildsForOrg(activeOrg?.id ?? '')
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -123,11 +114,7 @@ export default async function BuildsPage({
           )}
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {builds.map(build => (
-            <BuildCard key={build.id} build={build} />
-          ))}
-        </div>
+        <BuildsList orgId={activeOrg?.id ?? ''} initialBuilds={builds} canDelete={canDelete} />
       )}
     </div>
   )

@@ -28,10 +28,16 @@ export async function GET(
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? '50')))
   const offset = (page - 1) * limit
 
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+
+  const serviceSb = (await import('@/lib/supabase/service')).createServiceClient()
+  await serviceSb.from('changelog').delete().lt('created_at', thirtyDaysAgo)
+
   const { data, error, count } = await supabase
     .from('changelog')
     .select('*, profiles(id, email, display_name)', { count: 'exact' })
     .eq('build_id', buildId)
+    .gte('created_at', thirtyDaysAgo)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
 

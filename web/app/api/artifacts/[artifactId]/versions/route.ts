@@ -157,7 +157,17 @@ export async function POST(
     entityType: 'artifact_version',
     entityId: version.id,
     action: 'version_create',
-    metadata: { artifactId, version: nextVersion, fileName },
+    diff: {
+      artifactId,
+      version: nextVersion,
+      fileName,
+      previousVersion: ctx.artifact.current_version,
+      previousStoragePath: ctx.artifact.storage_path,
+      previousFileName: ctx.artifact.file_name,
+      newStoragePath: storagePath,
+      newFileName: fileName,
+    },
+    metadata: { artifactId, version: nextVersion, fileName, label: label.trim() },
   })
 
   return Response.json({ data: version }, { status: 201 })

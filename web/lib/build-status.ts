@@ -1,11 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { PHASE_IDS } from '@/lib/constants'
+import { PHASE_IDS, PHASE_ACCEPTED_TYPES, type PhaseId } from '@/lib/constants'
 
 export async function recomputeBuildStatus(
   supabase: SupabaseClient,
   buildId: string
 ): Promise<void> {
-  // Fetch all phases for this build with their artifact counts
   const { data: phases, error } = await supabase
     .from('phases')
     .select('id, phase, is_complete')
@@ -13,20 +12,25 @@ export async function recomputeBuildStatus(
 
   if (error || !phases) return
 
-  // For each phase check if it has ≥1 artifact with parse_status in ('ok', 'partial')
-  const phaseIds = phases.map((p) => p.id)
+  const phaseIds = phases.map(p => p.id)
 
   const { data: artifacts } = await supabase
     .from('artifacts')
-    .select('phase_id, parse_status')
+    .select('phase_id, file_type')
     .in('phase_id', phaseIds)
-    .in('parse_status', ['ok', 'partial'])
 
-  const phaseHasArtifact = new Set((artifacts ?? []).map((a) => a.phase_id))
+  const phaseHasRequiredType = new Set<string>()
 
-  // Update each phase's is_complete
   for (const phase of phases) {
-    const isComplete = phaseHasArtifact.has(phase.id)
+    const accepted = PHASE_ACCEPTED_TYPES[phase.phase as PhaseId] ?? []
+    const hasMatch = (artifacts ?? []).some(
+      a => a.phase_id === phase.id && accepted.includes(a.file_type)
+    )
+    if (hasMatch) phaseHasRequiredType.add(phase.id)
+  }
+
+  for (const phase of phases) {
+    const isComplete = phaseHasRequiredType.has(phase.id)
     if (isComplete !== phase.is_complete) {
       await supabase
         .from('phases')
@@ -35,9 +39,9 @@ export async function recomputeBuildStatus(
     }
   }
 
-  // Build is complete only if all 9 phases have ≥1 qualifying artifact
-  const allComplete = phases.length === PHASE_IDS.length &&
-    phases.every((p) => phaseHasArtifact.has(p.id))
+  const allComplete =
+    phases.length === PHASE_IDS.length &&
+    phases.every(p => phaseHasRequiredType.has(p.id))
 
   await supabase
     .from('builds')

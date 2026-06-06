@@ -7,9 +7,18 @@ import { ViewerRegistry, type ViewerProps } from './ViewerRegistry'
 interface CompactViewerProps extends ViewerProps {
   buildId?: string
   phaseId?: string
+  density?: 'full' | 'compact'
+  compareMode?: boolean
 }
 
-export function CompactViewer({ artifact, signedUrl, buildId, phaseId }: CompactViewerProps) {
+export function CompactViewer({
+  artifact,
+  signedUrl,
+  buildId,
+  phaseId,
+  density = 'compact',
+  compareMode = false,
+}: CompactViewerProps) {
   const byPhaseHref = buildId && phaseId
     ? `/builds/${buildId}/phases/${phaseId}`
     : buildId
@@ -18,7 +27,12 @@ export function CompactViewer({ artifact, signedUrl, buildId, phaseId }: Compact
 
   return (
     <div className="space-y-2">
-      <ViewerRegistry artifact={artifact} density="compact" signedUrl={signedUrl} />
+      <ViewerRegistry
+        artifact={artifact}
+        density={compareMode ? 'full' : density}
+        signedUrl={signedUrl}
+        compareMode={compareMode}
+      />
 
       {byPhaseHref && (
         <div className="flex justify-end">

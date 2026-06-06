@@ -11,14 +11,23 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [resetMessage, setResetMessage] = useState<string | null>(null)
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function signIn(emailValue: string, passwordValue: string) {
     setError(null)
     setLoading(true)
 
     const supabase = createClient()
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user?.email && user.email !== emailValue) {
+      await supabase.auth.signOut()
+    }
+
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: emailValue,
+      password: passwordValue,
+    })
 
     if (authError) {
       setError(authError.message)
@@ -30,19 +39,25 @@ export default function LoginPage() {
     router.refresh()
   }
 
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    await signIn(email, password)
+  }
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8">
       <h2 className="text-xl font-semibold text-gray-900 mb-6">Sign in to your account</h2>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
             Email address
           </label>
           <input
             id="email"
+            name="email"
             type="email"
-            autoComplete="email"
+            autoComplete="off"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -57,8 +72,9 @@ export default function LoginPage() {
           </label>
           <input
             id="password"
+            name="password"
             type="password"
-            autoComplete="current-password"
+            autoComplete="new-password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -70,6 +86,36 @@ export default function LoginPage() {
         {error && (
           <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
             {error}
+          </div>
+        )}
+
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={async () => {
+              if (!email.trim()) {
+                setError('Enter your email to reset password')
+                return
+              }
+              setError(null)
+              setResetMessage(null)
+              setLoading(true)
+              const { error: resetError } = await createClient().auth.resetPasswordForEmail(email.trim(), {
+                redirectTo: `${window.location.origin}/login`,
+              })
+              setLoading(false)
+              if (resetError) setError(resetError.message)
+              else setResetMessage('Password reset email sent. Check your inbox.')
+            }}
+            className="text-sm text-blue-600 hover:text-blue-500"
+          >
+            Forgot password?
+          </button>
+        </div>
+
+        {resetMessage && (
+          <div className="rounded-md bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700">
+            {resetMessage}
           </div>
         )}
 

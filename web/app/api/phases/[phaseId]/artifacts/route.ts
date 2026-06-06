@@ -139,7 +139,11 @@ export async function POST(
     entityType: 'artifact',
     entityId: artifact.id,
     action: 'create',
-    metadata: { label, fileType, fileName },
+    metadata: { label, fileType, fileName, storagePath },
+    diff: {
+      newStoragePath: storagePath,
+      newFileName: fileName,
+    },
   })
 
   const { data: finalArtifact } = await serviceSb

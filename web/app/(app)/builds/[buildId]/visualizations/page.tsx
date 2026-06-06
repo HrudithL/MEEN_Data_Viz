@@ -41,7 +41,7 @@ export default function VisualizationsPage() {
       })
       if (!res.ok) throw new Error('Failed to load visualization data')
       const json = await res.json()
-      setManifest(json)
+      setManifest(json.data ?? null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error loading visualizations')
     } finally {
@@ -112,7 +112,7 @@ export default function VisualizationsPage() {
         mode === 'by_phase' ? (
           <ByPhaseView manifest={manifest} />
         ) : (
-          <CompareView manifest={manifest} />
+          <CompareView />
         )
       ) : null}
     </div>

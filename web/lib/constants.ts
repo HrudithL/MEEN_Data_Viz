@@ -28,7 +28,7 @@ export const PHASE_ACCEPTED_TYPES: Record<PhaseId, string[]> = {
   powder_distribution: ['csv'],
   specimen_geometry: ['stl'],
   build_plate: ['stl', 'png'],
-  microstructure: ['ebsd_ang', 'ebsd_ctf'],
+  microstructure: ['mtex'],
   grain_size: ['csv'],
   defect_analysis: ['csv', 'ply', 'stl', 'tiff_zip'],
   tensile_testing: ['csv'],
@@ -48,6 +48,7 @@ export const FILE_TYPE_DISPLAY: Record<string, string> = {
   tiff_zip: 'TIFF Stack',
   ebsd_ang: 'EBSD (.ang)',
   ebsd_ctf: 'EBSD (.ctf)',
+  mtex: 'MTEX',
 }
 
 export const FILE_EXTENSIONS: Record<string, string[]> = {
@@ -58,9 +59,56 @@ export const FILE_EXTENSIONS: Record<string, string[]> = {
   tiff_zip: ['.zip'],
   ebsd_ang: ['.ang'],
   ebsd_ctf: ['.ctf'],
+  mtex: ['.mtex'],
 }
 
 export const REJECTED_EXTENSIONS = ['.xlsx', '.xls']
+
+/** Extensions allowed for build-level reference uploads (Data wizard top section). */
+export const REFERENCE_ACCEPTED_EXTENSIONS = [
+  '.csv',
+  '.stl',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.ply',
+  '.zip',
+  '.ang',
+  '.ctf',
+  '.txt',
+  '.md',
+  '.pptx',
+  '.pdf',
+  '.json',
+  '.tif',
+  '.tiff',
+  '.docx',
+  '.xlsx',
+  '.xls',
+] as const
+
+export const REFERENCE_EXTENSION_DISPLAY: Record<string, string> = {
+  '.csv': 'CSV',
+  '.stl': 'STL',
+  '.png': 'PNG',
+  '.jpg': 'JPEG',
+  '.jpeg': 'JPEG',
+  '.ply': 'PLY',
+  '.zip': 'ZIP / TIFF stack',
+  '.ang': 'EBSD (.ang)',
+  '.ctf': 'EBSD (.ctf)',
+  '.mtex': 'MTEX',
+  '.txt': 'Text',
+  '.md': 'Markdown',
+  '.pptx': 'PowerPoint',
+  '.pdf': 'PDF',
+  '.json': 'JSON',
+  '.tif': 'TIFF',
+  '.tiff': 'TIFF',
+  '.docx': 'Word',
+  '.xlsx': 'Excel',
+  '.xls': 'Excel',
+}
 
 export const MAX_UPLOAD_BYTES = parseInt(process.env.MAX_UPLOAD_BYTES ?? '209715200')
 
@@ -78,4 +126,34 @@ export const VIEWER_HINT_MAP: Record<string, string> = {
   tensile_testing: 'stress_strain',
   fatigue_testing: 'sn_curve',
   fracture_mechanics: 'fracture_scatter',
+}
+
+export const DEMO_ADMIN_EMAIL = process.env.NEXT_PUBLIC_DEMO_ADMIN_EMAIL ?? ''
+export const DEMO_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_DEMO_ADMIN_PASSWORD ?? ''
+
+export const isDemoLoginEnabled =
+  DEMO_ADMIN_EMAIL.length > 0 && DEMO_ADMIN_PASSWORD.length > 0
+
+/**
+ * Demo files live under `Data Set/Upload Info Test/{folder}/`.
+ * The Data wizard "Use demo file" button fetches them via `/api/demo/[phaseKey]`.
+ */
+export const PHASE_DEMO_FILES: Partial<
+  Record<PhaseId, { folder: string; fileName: string; label: string }>
+> = {
+  microstructure: {
+    folder: '04_microstructure',
+    fileName: 'demo-grain-map.mtex',
+    label: 'Demo grain map',
+  },
+  specimen_geometry: {
+    folder: '02_specimen_geometry',
+    fileName: 'demo-specimen.stl',
+    label: 'Demo specimen',
+  },
+  defect_analysis: {
+    folder: '06_defect_analysis',
+    fileName: 'demo-defects.ply',
+    label: 'Demo point cloud',
+  },
 }

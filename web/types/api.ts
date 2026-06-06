@@ -5,6 +5,20 @@ export interface PaginatedResponse<T> { data: T[]; meta: { page: number; limit: 
 
 export interface OrgWithRole extends Organization { role: OrgRole; memberCount?: number }
 
+export interface BuildReference {
+  id: string
+  build_id: string
+  label: string
+  description: string | null
+  file_name: string
+  file_extension: string
+  storage_path: string
+  file_size: number
+  mime_type: string | null
+  uploaded_at: string
+  uploaded_by: string
+}
+
 export interface BuildWithPhases extends Build {
   phases: Phase[]
   completedPhases: number
@@ -13,6 +27,14 @@ export interface BuildWithPhases extends Build {
 export interface PhaseWithArtifacts extends Phase {
   artifacts: ArtifactSummary[]
   supplements: PhaseSupplement[]
+}
+
+export interface PartNote {
+  id: string
+  label: string
+  text: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface ArtifactSummary {
@@ -56,6 +78,17 @@ export interface DashboardStats {
   inProgressBuilds: number
   phasesCompleted: number[]
   recentArtifacts: (Artifact & { phaseName: string; buildName: string })[]
+  uploadsByDay: { date: string; count: number }[]
+  recentBuilds: {
+    id: string
+    name: string
+    status: string
+    created_at: string
+    completedPhases: number
+    artifactCount: number
+  }[]
+  totalArtifacts: number
+  artifactsThisWeek: number
 }
 
 export interface InviteAcceptPayload { token: string }

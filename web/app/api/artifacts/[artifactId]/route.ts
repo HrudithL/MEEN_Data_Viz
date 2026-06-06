@@ -62,6 +62,8 @@ export async function PATCH(
   let jsonDiff: unknown = undefined
 
   if (body?.label !== undefined) updates.label = body.label
+  if (body?.file_name !== undefined) updates.file_name = body.file_name
+  if (body?.fileName !== undefined) updates.file_name = body.fileName
   if (body?.metadata !== undefined) updates.metadata = body.metadata
   if (body?.column_dictionary !== undefined) updates.column_dictionary = body.column_dictionary
 

@@ -10,12 +10,14 @@ import {
   Menu,
   X,
   Atom,
+  ChevronLeft,
+  ChevronRight,
+  User,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { OrgSwitcher } from './OrgSwitcher'
-import { UserMenu } from './UserMenu'
 import { useOrg } from '@/lib/hooks/useOrg'
 import type { OrgWithRole } from '@/types/api'
 
@@ -36,6 +38,7 @@ interface NavItem {
 export function AppShell({ children, orgs, userEmail, userDisplayName }: AppShellProps) {
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
   const { activeOrg, activeOrgId, setActiveOrgId } = useOrg(orgs)
 
   const navItems: NavItem[] = [
@@ -52,39 +55,43 @@ export function AppShell({ children, orgs, userEmail, userDisplayName }: AppShel
     return pathname.startsWith(href)
   }
 
+  const initials = (userDisplayName ?? userEmail)
+    .split(/[\s@]/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(s => s[0]?.toUpperCase() ?? '')
+    .join('')
+
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
-      {/* Logo */}
-      <div className="flex items-center gap-2 px-4 py-4 border-b">
-        <Atom className="h-6 w-6 text-primary" />
-        <span className="font-bold text-lg tracking-tight">MEEN Data</span>
+      <div className={cn('flex items-center border-b', collapsed ? 'justify-center px-2 py-4' : 'gap-2 px-4 py-4')}>
+        <Atom className="h-6 w-6 text-primary shrink-0" />
+        {!collapsed && <span className="font-bold text-lg tracking-tight">MEEN Data</span>}
       </div>
 
-      {/* Org switcher */}
-      <div className="px-3 py-3 border-b">
-        <OrgSwitcher
-          orgs={orgs}
-          activeOrgId={activeOrgId}
-          onSwitch={setActiveOrgId}
-        />
-      </div>
+      {!collapsed && (
+        <div className="px-3 py-3 border-b">
+          <OrgSwitcher orgs={orgs} activeOrgId={activeOrgId} onSwitch={setActiveOrgId} />
+        </div>
+      )}
 
-      {/* Nav */}
       <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
         {navItems.map(item => (
           <Link
             key={item.href}
             href={item.href}
+            title={item.label}
             onClick={() => setSidebarOpen(false)}
             className={cn(
-              'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+              'flex items-center rounded-md text-sm font-medium transition-colors',
+              collapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2',
               isActive(item.href)
                 ? 'bg-primary/10 text-primary'
                 : 'text-muted-foreground hover:bg-accent hover:text-foreground'
             )}
           >
             <item.icon className="h-4 w-4 shrink-0" />
-            {item.label}
+            {!collapsed && item.label}
           </Link>
         ))}
 
@@ -95,38 +102,74 @@ export function AppShell({ children, orgs, userEmail, userDisplayName }: AppShel
               <Link
                 key={item.href}
                 href={item.href}
+                title={item.label}
                 onClick={() => setSidebarOpen(false)}
                 className={cn(
-                  'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                  'flex items-center rounded-md text-sm font-medium transition-colors',
+                  collapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2',
                   isActive(item.href)
                     ? 'bg-primary/10 text-primary'
                     : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                 )}
               >
                 <item.icon className="h-4 w-4 shrink-0" />
-                {item.label}
+                {!collapsed && item.label}
               </Link>
             ))}
           </>
         )}
       </nav>
+
+      <div className="mt-auto border-t p-2 space-y-1">
+        <Link
+          href="/account"
+          title="Account"
+          onClick={() => setSidebarOpen(false)}
+          className={cn(
+            'flex items-center rounded-md text-sm transition-colors hover:bg-accent',
+            collapsed ? 'justify-center p-2' : 'gap-3 px-3 py-2',
+            pathname.startsWith('/account') && 'bg-primary/10 text-primary'
+          )}
+        >
+          <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold shrink-0">
+            {initials || <User className="h-4 w-4" />}
+          </div>
+          {!collapsed && (
+            <div className="min-w-0">
+              <p className="font-medium truncate">{userDisplayName ?? 'Account'}</p>
+              <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
+            </div>
+          )}
+        </Link>
+
+        <Button
+          variant="ghost"
+          size={collapsed ? 'icon' : 'sm'}
+          className={cn('w-full', collapsed ? 'mx-auto' : 'justify-start gap-2')}
+          onClick={() => setCollapsed(c => !c)}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          {!collapsed && <span className="text-xs">Collapse</span>}
+        </Button>
+      </div>
     </div>
   )
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* Desktop sidebar */}
-      <aside className="hidden md:flex flex-col w-[var(--sidebar-width,240px)] border-r bg-card shrink-0">
+      <aside
+        className={cn(
+          'hidden md:flex flex-col border-r bg-card shrink-0 transition-[width] duration-300 ease-in-out',
+          collapsed ? 'w-16' : 'w-60'
+        )}
+      >
         <SidebarContent />
       </aside>
 
-      {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setSidebarOpen(false)}
-          />
+          <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
           <aside className="relative flex flex-col w-64 bg-card border-r z-10">
             <Button
               variant="ghost"
@@ -141,12 +184,9 @@ export function AppShell({ children, orgs, userEmail, userDisplayName }: AppShel
         </div>
       )}
 
-      {/* Main content */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        {/* Top header */}
         <header className="flex items-center justify-between h-14 px-4 border-b bg-card shrink-0">
           <div className="flex items-center gap-3">
-            {/* Mobile menu toggle */}
             <Button
               variant="ghost"
               size="icon"
@@ -155,21 +195,13 @@ export function AppShell({ children, orgs, userEmail, userDisplayName }: AppShel
             >
               <Menu className="h-5 w-5" />
             </Button>
-            {/* Breadcrumb / current page */}
             <span className="text-sm text-muted-foreground hidden sm:block">
               {activeOrg?.name ?? 'MEEN Data Viz'}
             </span>
           </div>
-
-          <div className="flex items-center gap-2">
-            <UserMenu email={userEmail} displayName={userDisplayName} />
-          </div>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
   )

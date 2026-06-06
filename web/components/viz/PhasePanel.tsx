@@ -1,14 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronDown, ChevronRight, CheckCircle2, Circle, Loader2, Image as ImageIcon } from 'lucide-react'
+import { ChevronDown, ChevronRight, CheckCircle2, Circle, Loader2 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { cn } from '@/lib/utils'
 import { PHASE_DISPLAY } from '@/lib/constants'
 import { ArtifactToolbar } from './ArtifactToolbar'
+import { NotesPreview } from './NotesPreview'
 import { Badge } from '@/components/ui/badge'
 import type { VizPhase, ArtifactSummary } from '@/types/api'
-import type { PhaseIdEnum } from '@/types/database'
+import type { PhaseIdEnum, NotesJson } from '@/types/database'
 import type { ArtifactSummary as ViewerArtifactSummary } from '@/components/viewers/ViewerRegistry'
 
 const ViewerRegistry = dynamic(
@@ -65,7 +66,7 @@ export function VizPhasePanel({ vizPhase, phaseKey, defaultOpen = false }: VizPh
           `/api/storage/sign-download?storagePath=${encodeURIComponent(art.storage_path)}`
         )
         const urlJson = await urlRes.json()
-        setSignedUrl(urlJson.signedUrl ?? null)
+        setSignedUrl(urlJson.data?.signedUrl ?? null)
       })
       .catch(() => {})
       .finally(() => setLoadingArtifact(false))
@@ -75,7 +76,9 @@ export function VizPhasePanel({ vizPhase, phaseKey, defaultOpen = false }: VizPh
     if (!vizPhase.notesJson || typeof vizPhase.notesJson !== 'object') return false
     const n = vizPhase.notesJson as Record<string, unknown>
     if (!('blocks' in n) || !Array.isArray(n.blocks)) return false
-    return (n.blocks as { text: string }[]).some(b => b.text?.trim())
+    return (n.blocks as { type: string; text?: string }[]).some(
+      b => b.type === 'image' || Boolean(b.text?.trim())
+    )
   })()
 
   // Build the ViewerRegistry artifact shape
@@ -113,12 +116,6 @@ export function VizPhasePanel({ vizPhase, phaseKey, defaultOpen = false }: VizPh
           {PHASE_DISPLAY[phaseKey]}
         </span>
         <div className="flex items-center gap-2">
-          {vizPhase.supplements.length > 0 && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <ImageIcon className="h-3.5 w-3.5" />
-              {vizPhase.supplements.length}
-            </div>
-          )}
           <Badge
             variant="outline"
             className={cn(
@@ -139,45 +136,7 @@ export function VizPhasePanel({ vizPhase, phaseKey, defaultOpen = false }: VizPh
           {hasNotesContent && (
             <div className="px-4 py-3 bg-muted/20">
               <p className="text-xs font-medium text-muted-foreground mb-1">Notes</p>
-              <div className="space-y-0.5">
-                {(
-                  vizPhase.notesJson as {
-                    blocks: { type: string; text: string; bold?: boolean; italic?: boolean }[]
-                  }
-                ).blocks
-                  .filter(b => b.text?.trim())
-                  .slice(0, 3)
-                  .map((block, i) => (
-                    <p
-                      key={i}
-                      className={cn(
-                        'text-xs',
-                        block.type === 'bullet' && 'pl-3 before:content-["•"] before:mr-1',
-                        block.bold && 'font-semibold',
-                        block.italic && 'italic'
-                      )}
-                    >
-                      {block.text}
-                    </p>
-                  ))}
-              </div>
-            </div>
-          )}
-
-          {/* Supplement thumbnails */}
-          {vizPhase.supplements.length > 0 && (
-            <div className="px-4 py-3">
-              <p className="text-xs font-medium text-muted-foreground mb-2">Supplements</p>
-              <div className="flex gap-2 overflow-x-auto">
-                {vizPhase.supplements.slice(0, 8).map(supp => (
-                  <div
-                    key={supp.id}
-                    className="shrink-0 w-12 h-12 rounded border bg-muted flex items-center justify-center"
-                  >
-                    <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                ))}
-              </div>
+              <NotesPreview notesJson={vizPhase.notesJson as NotesJson} maxBlocks={3} />
             </div>
           )}
 

@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronsUpDown, Building2, Plus, Check } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,15 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { CreateOrgDialog } from '@/components/layout/CreateOrgDialog'
 import type { OrgWithRole } from '@/types/api'
 
 interface OrgSwitcherProps {
@@ -32,34 +23,12 @@ interface OrgSwitcherProps {
 export function OrgSwitcher({ orgs, activeOrgId, onSwitch }: OrgSwitcherProps) {
   const router = useRouter()
   const [createOpen, setCreateOpen] = useState(false)
-  const [orgName, setOrgName] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
 
   const activeOrg = orgs.find(o => o.id === activeOrgId)
 
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault()
-    if (!orgName.trim()) return
-    setLoading(true)
-    setError('')
-    try {
-      const res = await fetch('/api/organizations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: orgName.trim() }),
-      })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error?.message ?? 'Failed to create organization')
-      onSwitch(json.data.id)
-      setCreateOpen(false)
-      setOrgName('')
-      router.refresh()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error')
-    } finally {
-      setLoading(false)
-    }
+  function handleOrgCreated(orgId: string) {
+    onSwitch(orgId)
+    router.refresh()
   }
 
   return (
@@ -104,39 +73,11 @@ export function OrgSwitcher({ orgs, activeOrgId, onSwitch }: OrgSwitcherProps) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Create Organization</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleCreate} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="org-name">Organization name</Label>
-              <Input
-                id="org-name"
-                placeholder="e.g. TAMU Materials Lab"
-                value={orgName}
-                onChange={e => setOrgName(e.target.value)}
-                required
-                autoFocus
-              />
-              {error && <p className="text-sm text-destructive">{error}</p>}
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setCreateOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading || !orgName.trim()}>
-                {loading ? 'Creating...' : 'Create'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <CreateOrgDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={handleOrgCreated}
+      />
     </>
   )
 }

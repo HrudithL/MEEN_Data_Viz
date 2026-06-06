@@ -39,6 +39,10 @@ export async function parseArtifact(
         const { parseTiffZip } = await import('./tiff-zip')
         return parseTiffZip(buffer)
       }
+      case 'mtex': {
+        const { parseMtex } = await import('./mtex')
+        return parseMtex(buffer)
+      }
       default:
         return { parsedJson: { kind: 'image', format: 'png', width: 0, height: 0 }, parseStatus: 'failed', error: 'Unknown file type' }
     }

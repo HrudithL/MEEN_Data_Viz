@@ -7,8 +7,9 @@ import { PHASE_DISPLAY } from '@/lib/constants'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { FILE_TYPE_DISPLAY } from '@/lib/constants'
+import { NotesPreview } from './NotesPreview'
 import type { VizPhase, ArtifactSummary } from '@/types/api'
-import type { PhaseIdEnum } from '@/types/database'
+import type { NotesJson, PhaseIdEnum } from '@/types/database'
 import type { ArtifactSummary as ViewerArtifactSummary } from '@/components/viewers/ViewerRegistry'
 
 const CompactViewer = dynamic(
@@ -26,6 +27,8 @@ const CompactViewer = dynamic(
 interface PhaseCellProps {
   vizPhase: VizPhase
   phaseKey: PhaseIdEnum
+  compact?: boolean
+  compareMode?: boolean
 }
 
 interface FullArtifact {
@@ -37,10 +40,20 @@ interface FullArtifact {
   parse_status: string
 }
 
-export function PhaseCell({ vizPhase, phaseKey }: PhaseCellProps) {
+function hasNotesContent(notesJson: NotesJson | null | undefined): boolean {
+  if (!notesJson?.blocks?.length) return false
+  return notesJson.blocks.some(b => {
+    if (b.type === 'image' || b.type === 'file') return true
+    if (b.type === 'paragraph' || b.type === 'bullet') return Boolean(b.text?.trim())
+    return false
+  })
+}
+
+export function PhaseCell({ vizPhase, phaseKey, compact = false, compareMode = false }: PhaseCellProps) {
+  const showNotes = hasNotesContent(vizPhase.notesJson as NotesJson)
+
   return (
-    <div className="border rounded-lg overflow-hidden flex flex-col">
-      {/* Header */}
+    <div className="border rounded-lg overflow-hidden flex flex-col h-full">
       <div
         className={cn(
           'px-3 py-2 border-b text-xs font-semibold flex items-center justify-between',
@@ -51,15 +64,33 @@ export function PhaseCell({ vizPhase, phaseKey }: PhaseCellProps) {
         {vizPhase.isComplete && <span className="text-green-600">&#10003;</span>}
       </div>
 
-      {/* Artifact list */}
-      <div className="flex-1 divide-y overflow-y-auto max-h-[320px]">
+      {showNotes && (
+        <div className="px-2 py-2 border-b bg-muted/20">
+          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
+            Notes
+          </p>
+          <NotesPreview notesJson={vizPhase.notesJson as NotesJson} maxBlocks={2} />
+        </div>
+      )}
+
+      <div
+        className={cn(
+          'flex-1 divide-y overflow-y-auto',
+          compareMode ? 'max-h-none' : compact ? 'max-h-[240px]' : 'max-h-[420px]'
+        )}
+      >
         {vizPhase.artifacts.length === 0 ? (
           <div className="flex items-center justify-center h-16 text-xs text-muted-foreground">
             No data
           </div>
         ) : (
           vizPhase.artifacts.map(artifact => (
-            <ArtifactCompactCell key={artifact.id} artifact={artifact} />
+            <ArtifactCompactCell
+              key={artifact.id}
+              artifact={artifact}
+              compact={compact}
+              compareMode={compareMode}
+            />
           ))
         )}
       </div>
@@ -67,7 +98,15 @@ export function PhaseCell({ vizPhase, phaseKey }: PhaseCellProps) {
   )
 }
 
-function ArtifactCompactCell({ artifact }: { artifact: ArtifactSummary }) {
+function ArtifactCompactCell({
+  artifact,
+  compact = false,
+  compareMode = false,
+}: {
+  artifact: ArtifactSummary
+  compact?: boolean
+  compareMode?: boolean
+}) {
   const [expanded, setExpanded] = useState(false)
   const [fullArtifact, setFullArtifact] = useState<FullArtifact | null>(null)
   const [signedUrl, setSignedUrl] = useState<string | null>(null)
@@ -87,11 +126,19 @@ function ArtifactCompactCell({ artifact }: { artifact: ArtifactSummary }) {
       const art: FullArtifact = artJson.data
       setFullArtifact(art)
 
-      const urlRes = await fetch(
-        `/api/storage/sign-download?storagePath=${encodeURIComponent(art.storage_path)}`
-      )
-      const urlJson = await urlRes.json()
-      setSignedUrl(urlJson.signedUrl ?? null)
+      const needsUrl =
+        art.file_type === 'stl' ||
+        art.file_type === 'ply' ||
+        art.file_type === 'png' ||
+        art.file_type === 'mtex'
+
+      if (needsUrl) {
+        const urlRes = await fetch(
+          `/api/storage/sign-download?storagePath=${encodeURIComponent(art.storage_path)}`
+        )
+        const urlJson = await urlRes.json()
+        setSignedUrl(urlJson.data?.signedUrl ?? null)
+      }
     } catch {
       // ignore
     } finally {
@@ -137,6 +184,8 @@ function ArtifactCompactCell({ artifact }: { artifact: ArtifactSummary }) {
             <CompactViewer
               artifact={viewerArtifact}
               signedUrl={signedUrl ?? undefined}
+              density={compareMode ? 'full' : compact ? 'compact' : 'full'}
+              compareMode={compareMode}
             />
           ) : (
             <p className="text-xs text-muted-foreground text-center py-4">

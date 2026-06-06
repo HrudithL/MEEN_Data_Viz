@@ -12,6 +12,8 @@ const TABS = [
   { label: 'Overview', suffix: '' },
   { label: 'Data', suffix: '/data' },
   { label: 'Visualizations', suffix: '/visualizations' },
+  { label: 'Edit Log', suffix: '/edit-log' },
+  { label: 'Settings', suffix: '/settings' },
 ]
 
 export function BuildTabNav({ buildId }: BuildTabNavProps) {

@@ -1,23 +1,11 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { Badge } from '@/components/ui/badge'
 import { BuildTabNav } from '@/components/builds/BuildTabNav'
-import { cn } from '@/lib/utils'
-import type { BuildWithPhases } from '@/types/api'
+import { BuildHeaderStatus } from '@/components/builds/BuildHeaderStatus'
+import { getBuildWithPhases } from '@/lib/queries/builds'
 
-async function getBuild(buildId: string): Promise<BuildWithPhases | null> {
-  try {
-    const base = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-    const res = await fetch(`${base}/api/builds/${buildId}`, { cache: 'no-store' })
-    if (!res.ok) return null
-    const json = await res.json()
-    return json.data ?? null
-  } catch {
-    return null
-  }
-}
-
+export const dynamic = 'force-dynamic'
 
 export default async function BuildLayout({
   children,
@@ -30,7 +18,7 @@ export default async function BuildLayout({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const build = await getBuild(params.buildId)
+  const build = await getBuildWithPhases(params.buildId)
   if (!build) notFound()
 
   return (
@@ -47,28 +35,14 @@ export default async function BuildLayout({
               <span className="text-sm font-medium truncate">{build.name}</span>
             </div>
             <h1 className="text-xl font-bold truncate">{build.name}</h1>
-            <div className="flex items-center gap-3 mt-1 flex-wrap">
-              <Badge
-                variant="outline"
-                className={cn(
-                  'text-xs',
-                  build.status === 'complete'
-                    ? 'border-green-200 bg-green-50 text-green-700'
-                    : 'border-blue-200 bg-blue-50 text-blue-700'
-                )}
-              >
-                {build.status === 'complete' ? 'Complete' : 'In Progress'}
-              </Badge>
-              {build.material && (
-                <span className="text-xs text-muted-foreground">Material: {build.material}</span>
-              )}
-              {build.process && (
-                <span className="text-xs text-muted-foreground">Process: {build.process}</span>
-              )}
-              <span className="text-xs text-muted-foreground">
-                {build.completedPhases}/{build.phases?.length ?? 9} phases complete
-              </span>
-            </div>
+            <BuildHeaderStatus
+              buildId={params.buildId}
+              initialStatus={build.status}
+              initialCompletedPhases={build.completedPhases ?? 0}
+              totalPhases={build.phases?.length ?? 9}
+              material={build.material}
+              process={build.process}
+            />
           </div>
         </div>
 

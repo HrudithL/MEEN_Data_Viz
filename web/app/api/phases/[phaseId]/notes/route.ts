@@ -40,7 +40,31 @@ export async function PATCH(
   }
 
   for (const block of notesJson.blocks) {
-    if (!['paragraph', 'bullet'].includes(block.type)) {
+    if (block.type === 'image') {
+      if (typeof block.storagePath !== 'string' || !block.storagePath.trim()) {
+        return apiError('INVALID_FORMAT', 'Image blocks require storagePath')
+      }
+      if (typeof block.fileName !== 'string' || !block.fileName.trim()) {
+        return apiError('INVALID_FORMAT', 'Image blocks require fileName')
+      }
+      if (block.caption !== undefined && typeof block.caption !== 'string') {
+        return apiError('INVALID_FORMAT', 'Image caption must be a string')
+      }
+      continue
+    }
+    if (block.type === 'file') {
+      if (typeof block.storagePath !== 'string' || !block.storagePath.trim()) {
+        return apiError('INVALID_FORMAT', 'File blocks require storagePath')
+      }
+      if (typeof block.fileName !== 'string' || !block.fileName.trim()) {
+        return apiError('INVALID_FORMAT', 'File blocks require fileName')
+      }
+      if (typeof block.fileSize !== 'number') {
+        return apiError('INVALID_FORMAT', 'File blocks require fileSize')
+      }
+      continue
+    }
+    if (!['paragraph', 'bullet', 'image', 'file'].includes(block.type)) {
       return apiError('INVALID_FORMAT', `Invalid block type: ${block.type}`)
     }
     if (typeof block.text !== 'string') {

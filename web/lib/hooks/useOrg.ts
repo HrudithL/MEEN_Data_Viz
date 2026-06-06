@@ -41,5 +41,5 @@ export function useOrg(orgs: OrgWithRole[] = []) {
   const canEdit = userRole === 'admin' || userRole === 'editor'
   const isAdmin = userRole === 'admin'
 
-  return { activeOrg, activeOrgId: activeOrg?.id ?? null, setActiveOrgId, userRole, canEdit, isAdmin }
+  return { activeOrg, activeOrgId, setActiveOrgId, userRole, canEdit, isAdmin }
 }

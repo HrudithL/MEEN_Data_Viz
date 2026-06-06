@@ -1,202 +1,297 @@
 'use client'
 
-import { useState } from 'react'
-import { Bold, Italic, List, Save } from 'lucide-react'
+import { useCallback, useRef, useState } from 'react'
+import { Upload, Trash2, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-import type { NotesJson, RichTextBlock } from '@/types/database'
+import { Badge } from '@/components/ui/badge'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { cn, formatBytes } from '@/lib/utils'
+import { isNotesImportFile } from '@/lib/notes-import'
+import { NoteEditorDialog } from './NoteEditorDialog'
+import type { NotesJson, RichTextBlock, PhaseIdEnum } from '@/types/database'
+
+function defaultNotesName(phaseKey: PhaseIdEnum): string {
+  return `${phaseKey.replace(/_/g, '-')}-notes`
+}
 
 interface NotesEditorProps {
   phaseId: string
-  initialNotes: NotesJson | null
+  phaseKey: PhaseIdEnum
+  orgId: string
+  buildId: string
+  notes: NotesJson
+  onNotesChange: (notes: NotesJson) => void
   readOnly?: boolean
 }
 
-type ActiveFormats = { bold: boolean; italic: boolean }
+type NoteFileBlock = Extract<RichTextBlock, { type: 'file' }>
 
-export function NotesEditor({ phaseId, initialNotes, readOnly = false }: NotesEditorProps) {
-  const [blocks, setBlocks] = useState<RichTextBlock[]>(
-    initialNotes?.blocks ?? [{ type: 'paragraph', text: '' }]
-  )
-  const [activeIndex, setActiveIndex] = useState(0)
-  const [formats, setFormats] = useState<ActiveFormats>({ bold: false, italic: false })
+function isFileBlock(block: RichTextBlock): block is NoteFileBlock {
+  return block.type === 'file'
+}
+
+function getFileBlocks(notes: NotesJson): NoteFileBlock[] {
+  return (notes.blocks ?? []).filter(isFileBlock)
+}
+
+export function NotesEditor({
+  phaseId,
+  phaseKey,
+  orgId,
+  buildId,
+  notes,
+  onNotesChange,
+  readOnly = false,
+}: NotesEditorProps) {
   const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const [editingBlock, setEditingBlock] = useState<NoteFileBlock | null>(null)
+  const [editorOpen, setEditorOpen] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
-  function updateBlock(index: number, updates: Partial<RichTextBlock>) {
-    setBlocks(prev => prev.map((b, i) => i === index ? { ...b, ...updates } : b))
-    setSaved(false)
-  }
+  const fileBlocks = getFileBlocks(notes)
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>, index: number) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      const newBlock: RichTextBlock = { type: 'paragraph', text: '' }
-      setBlocks(prev => [
-        ...prev.slice(0, index + 1),
-        newBlock,
-        ...prev.slice(index + 1),
-      ])
-      setActiveIndex(index + 1)
-    }
-    if (e.key === 'Backspace' && blocks[index]?.text === '' && blocks.length > 1) {
-      e.preventDefault()
-      setBlocks(prev => prev.filter((_, i) => i !== index))
-      setActiveIndex(Math.max(0, index - 1))
-    }
-  }
-
-  function toggleFormat(format: keyof ActiveFormats) {
-    setFormats(prev => ({ ...prev, [format]: !prev[format] }))
-    if (activeIndex < blocks.length) {
-      updateBlock(activeIndex, {
-        [format]: !blocks[activeIndex]?.[format],
-      })
-    }
-  }
-
-  function toggleType() {
-    if (activeIndex >= blocks.length) return
-    const current = blocks[activeIndex]
-    updateBlock(activeIndex, {
-      type: current?.type === 'bullet' ? 'paragraph' : 'bullet',
-    })
-  }
-
-  async function handleSave() {
-    setSaving(true)
-    setError('')
-    const notes: NotesJson = {
-      format: 'richtext_v1',
-      blocks: blocks.filter(b => b.text.trim() !== '' || b.type === 'paragraph'),
-    }
-    try {
-      const res = await fetch(`/api/phases/${phaseId}/notes`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notes_json: notes }),
-      })
-      if (!res.ok) {
+  const persistNotes = useCallback(
+    async (nextBlocks: RichTextBlock[]) => {
+      setSaving(true)
+      setError('')
+      const payload: NotesJson = { format: 'richtext_v1', blocks: nextBlocks }
+      try {
+        const res = await fetch(`/api/phases/${phaseId}/notes`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notes_json: payload }),
+        })
+        if (!res.ok) {
+          const json = await res.json()
+          throw new Error(json.error?.message ?? 'Failed to save notes')
+        }
         const json = await res.json()
-        throw new Error(json.error?.message ?? 'Failed to save notes')
+        onNotesChange((json.data?.notes_json ?? payload) as NotesJson)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error saving')
+      } finally {
+        setSaving(false)
       }
-      setSaved(true)
+    },
+    [phaseId, onNotesChange]
+  )
+
+  async function uploadNoteFile(file: File) {
+    setUploading(true)
+    setError('')
+    try {
+      const signRes = await fetch('/api/storage/sign-upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orgId,
+          buildId,
+          phaseId,
+          fileName: file.name,
+          fileSize: file.size,
+          mimeType: file.type || 'text/plain',
+          notesFile: true,
+        }),
+      })
+      const signJson = await signRes.json()
+      if (!signRes.ok) throw new Error(signJson.error?.message ?? 'Failed to get upload URL')
+
+      const { signedUrl, storagePath } = signJson.data
+      await fetch(signedUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type || 'text/plain' },
+      })
+
+      const block: NoteFileBlock = {
+        type: 'file',
+        storagePath,
+        fileName: file.name,
+        fileSize: file.size,
+        label: defaultNotesName(phaseKey),
+        updatedAt: new Date().toISOString(),
+      }
+
+      const otherBlocks = notes.blocks.filter(b => !isFileBlock(b) || b.storagePath !== storagePath)
+      await persistNotes([...otherBlocks, block])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error saving')
+      setError(err instanceof Error ? err.message : 'Upload failed')
     } finally {
-      setSaving(false)
+      setUploading(false)
     }
+  }
+
+  async function handleImportFile(file: File) {
+    if (!isNotesImportFile(file.name)) {
+      setError('Notes upload accepts .md and .txt files only')
+      return
+    }
+    await uploadNoteFile(file)
+  }
+
+  async function handleDelete(block: NoteFileBlock) {
+    const next = notes.blocks.filter(
+      b => !isFileBlock(b) || b.storagePath !== block.storagePath
+    )
+    await persistNotes(next.length ? next : [])
   }
 
   if (readOnly) {
-    const notesBlocks = initialNotes?.blocks ?? []
-    if (notesBlocks.length === 0 || notesBlocks.every(b => !b.text.trim())) {
+    if (fileBlocks.length === 0) {
       return <p className="text-sm text-muted-foreground italic">No notes</p>
     }
     return (
-      <div className="space-y-1">
-        {notesBlocks.map((block, i) => (
-          <p
-            key={i}
-            className={cn(
-              'text-sm',
-              block.type === 'bullet' && 'pl-4 before:content-["•"] before:mr-2 before:text-muted-foreground',
-              block.bold && 'font-bold',
-              block.italic && 'italic'
-            )}
-          >
-            {block.text}
-          </p>
-        ))}
-      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="text-xs">Label</TableHead>
+            <TableHead className="text-xs">File</TableHead>
+            <TableHead className="text-xs">Size</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {fileBlocks.map(block => (
+            <TableRow key={block.storagePath}>
+              <TableCell className="text-sm">{block.label ?? block.fileName}</TableCell>
+              <TableCell className="text-xs text-muted-foreground">{block.fileName}</TableCell>
+              <TableCell className="text-xs text-muted-foreground">
+                {formatBytes(block.fileSize)}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     )
   }
 
   return (
-    <div className="border rounded-md overflow-hidden">
-      {/* Toolbar */}
-      <div className="flex items-center gap-1 px-2 py-1.5 border-b bg-muted/30">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className={cn('h-7 w-7', formats.bold && 'bg-accent')}
-          onClick={() => toggleFormat('bold')}
-        >
-          <Bold className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className={cn('h-7 w-7', formats.italic && 'bg-accent')}
-          onClick={() => toggleFormat('italic')}
-        >
-          <Italic className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className={cn(
-            'h-7 w-7',
-            blocks[activeIndex]?.type === 'bullet' && 'bg-accent'
-          )}
-          onClick={toggleType}
-        >
-          <List className="h-3.5 w-3.5" />
-        </Button>
-      </div>
-
-      {/* Blocks */}
-      <div className="min-h-[100px] p-2 space-y-0.5">
-        {blocks.map((block, index) => (
-          <div key={index} className="flex items-start gap-1.5">
-            {block.type === 'bullet' && (
-              <span className="text-muted-foreground mt-1.5 text-sm select-none">•</span>
-            )}
-            <textarea
-              value={block.text}
-              onChange={e => updateBlock(index, { text: e.target.value })}
-              onKeyDown={e => handleKeyDown(e, index)}
-              onFocus={() => {
-                setActiveIndex(index)
-                setFormats({ bold: !!block.bold, italic: !!block.italic })
-              }}
-              rows={1}
-              className={cn(
-                'w-full resize-none text-sm bg-transparent outline-none leading-6',
-                block.bold && 'font-bold',
-                block.italic && 'italic',
-                block.type === 'bullet' && 'pl-0'
-              )}
-              style={{ minHeight: '1.5rem', height: 'auto' }}
-              onInput={e => {
-                const el = e.currentTarget
-                el.style.height = 'auto'
-                el.style.height = `${el.scrollHeight}px`
-              }}
-              placeholder={index === 0 ? 'Add notes about this phase...' : ''}
-            />
-          </div>
-        ))}
-      </div>
-
-      {/* Footer */}
-      <div className="flex items-center justify-between px-3 py-2 border-t bg-muted/20">
-        {error ? (
-          <span className="text-xs text-destructive">{error}</span>
-        ) : saved ? (
-          <span className="text-xs text-green-600">Saved</span>
-        ) : (
-          <span className="text-xs text-muted-foreground">Unsaved changes</span>
+    <div className="space-y-4">
+      <div
+        onClick={() => fileRef.current?.click()}
+        className={cn(
+          'border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors',
+          uploading
+            ? 'border-primary bg-primary/5'
+            : 'border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/30'
         )}
-        <Button size="sm" variant="outline" onClick={handleSave} disabled={saving} className="h-7 text-xs gap-1">
-          <Save className="h-3 w-3" />
-          {saving ? 'Saving...' : 'Save'}
-        </Button>
+      >
+        {uploading ? (
+          <Loader2 className="h-6 w-6 mx-auto animate-spin text-muted-foreground" />
+        ) : (
+          <>
+            <Upload className="h-6 w-6 mx-auto text-muted-foreground" />
+            <p className="text-sm font-medium mt-2">Drop .md or .txt file — uploads automatically</p>
+          </>
+        )}
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".md,.txt,text/plain,text/markdown"
+          className="hidden"
+          onChange={e => {
+            const file = e.target.files?.[0]
+            if (file) void handleImportFile(file)
+            e.target.value = ''
+          }}
+        />
       </div>
+
+      <div className="min-h-[1.25rem] text-xs">
+        {error ? (
+          <span className="text-destructive">{error}</span>
+        ) : saving ? (
+          <span className="text-muted-foreground">Saving...</span>
+        ) : null}
+      </div>
+
+      <div>
+        <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+          Note Files
+        </h5>
+        {fileBlocks.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">No note files yet</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">Label</TableHead>
+                <TableHead className="text-xs">File</TableHead>
+                <TableHead className="text-xs">Type</TableHead>
+                <TableHead className="text-xs">Size</TableHead>
+                <TableHead className="w-8"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {fileBlocks.map(block => (
+                <TableRow
+                  key={block.storagePath}
+                  className="cursor-pointer hover:bg-muted/40"
+                  onClick={() => {
+                    setEditingBlock(block)
+                    setEditorOpen(true)
+                  }}
+                >
+                  <TableCell className="text-sm font-medium">
+                    {block.label ?? block.fileName}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-[160px] truncate">
+                    {block.fileName}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs">MD</Badge>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {formatBytes(block.fileSize)}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                      onClick={e => {
+                        e.stopPropagation()
+                        void handleDelete(block)
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
+
+      <NoteEditorDialog
+        block={
+          editingBlock
+            ? getFileBlocks(notes).find(
+                b => b.storagePath === editingBlock.storagePath || b.label === editingBlock.label
+              ) ?? editingBlock
+            : null
+        }
+        phaseId={phaseId}
+        phaseKey={phaseKey}
+        orgId={orgId}
+        buildId={buildId}
+        notes={notes}
+        onNotesChange={onNotesChange}
+        open={editorOpen}
+        onOpenChange={open => {
+          setEditorOpen(open)
+          if (!open) setEditingBlock(null)
+        }}
+      />
     </div>
   )
 }

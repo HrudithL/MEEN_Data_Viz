@@ -28,6 +28,7 @@ export interface ViewerProps {
   artifact: ArtifactSummary
   density?: 'full' | 'compact'
   signedUrl?: string
+  compareMode?: boolean
 }
 
 // Lazy-loaded viewers
@@ -61,7 +62,12 @@ const TiffViewer = dynamic(() => import('./TiffViewer').then(m => ({ default: m.
   ssr: false,
 })
 
-export function ViewerRegistry({ artifact, density = 'full', signedUrl }: ViewerProps) {
+const MtexViewer = dynamic(() => import('./MtexViewer').then(m => ({ default: m.MtexViewer })), {
+  loading: () => <LoadingSkeleton height={300} />,
+  ssr: false,
+})
+
+export function ViewerRegistry({ artifact, density = 'full', signedUrl, compareMode = false }: ViewerProps) {
   const { parsedJson, parseStatus, fileName, fileType, id } = artifact
 
   if (parseStatus === 'failed') {
@@ -86,6 +92,7 @@ export function ViewerRegistry({ artifact, density = 'full', signedUrl }: Viewer
           parsedJson={parsedJson}
           artifact={artifact}
           density={density}
+          compareMode={compareMode}
         />
       )
 
@@ -109,6 +116,16 @@ export function ViewerRegistry({ artifact, density = 'full', signedUrl }: Viewer
       const buildId = id
       return <TiffViewer parsedJson={parsedJson} buildId={buildId} density={density} />
     }
+
+    case 'mtex_map':
+      return (
+        <MtexViewer
+          parsedJson={parsedJson}
+          fileName={fileName}
+          signedUrl={signedUrl}
+          density={density}
+        />
+      )
 
     default:
       return (

@@ -3,10 +3,79 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { apiError } from '@/lib/utils'
 import { insertChangelog } from '@/lib/changelog'
+import type { NotesJson } from '@/types/database'
 
 async function getOrgIdForBuild(supabase: Awaited<ReturnType<typeof createClient>>, buildId: string) {
   const { data } = await supabase.from('builds').select('organization_id').eq('id', buildId).single()
   return data?.organization_id ?? null
+}
+
+function collectNotesStoragePaths(notesJson: unknown): string[] {
+  if (!notesJson || typeof notesJson !== 'object') return []
+  const notes = notesJson as NotesJson
+  if (notes.format !== 'richtext_v1' || !Array.isArray(notes.blocks)) return []
+
+  return notes.blocks.flatMap(block => {
+    if ((block.type === 'file' || block.type === 'image') && block.storagePath) {
+      return [block.storagePath]
+    }
+    return []
+  })
+}
+
+async function collectBuildStoragePaths(
+  serviceSb: ReturnType<typeof createServiceClient>,
+  buildId: string,
+  phaseIds: string[]
+): Promise<string[]> {
+  const paths: string[] = []
+
+  if (phaseIds.length > 0) {
+    const { data: phases } = await serviceSb
+      .from('phases')
+      .select('notes_json')
+      .in('id', phaseIds)
+
+    for (const phase of phases ?? []) {
+      paths.push(...collectNotesStoragePaths(phase.notes_json))
+    }
+
+    const { data: artifacts } = await serviceSb
+      .from('artifacts')
+      .select('id, storage_path')
+      .in('phase_id', phaseIds)
+
+    const artifactIds: string[] = []
+    for (const artifact of artifacts ?? []) {
+      if (artifact.storage_path) paths.push(artifact.storage_path)
+      artifactIds.push(artifact.id)
+    }
+
+    if (artifactIds.length > 0) {
+      const { data: versions } = await serviceSb
+        .from('artifact_versions')
+        .select('storage_path')
+        .in('artifact_id', artifactIds)
+
+      paths.push(...(versions ?? []).map(v => v.storage_path).filter(Boolean))
+    }
+
+    const { data: supplements } = await serviceSb
+      .from('phase_supplements')
+      .select('storage_path')
+      .in('phase_id', phaseIds)
+
+    paths.push(...(supplements ?? []).map(s => s.storage_path).filter(Boolean))
+  }
+
+  const { data: references } = await serviceSb
+    .from('build_references')
+    .select('storage_path')
+    .eq('build_id', buildId)
+
+  paths.push(...(references ?? []).map(r => r.storage_path).filter(Boolean))
+
+  return [...new Set(paths)]
 }
 
 // GET /api/builds/[buildId]
@@ -115,17 +184,10 @@ export async function DELETE(
     .eq('build_id', buildId)
 
   const phaseIds = (phases ?? []).map((p) => p.id)
+  const paths = await collectBuildStoragePaths(serviceSb, buildId, phaseIds)
 
-  if (phaseIds.length > 0) {
-    const { data: artifacts } = await serviceSb
-      .from('artifacts')
-      .select('storage_path')
-      .in('phase_id', phaseIds)
-
-    const paths = (artifacts ?? []).map((a) => a.storage_path).filter(Boolean)
-    if (paths.length > 0) {
-      await serviceSb.storage.from('build-artifacts').remove(paths).catch(() => {})
-    }
+  if (paths.length > 0) {
+    await serviceSb.storage.from('build-artifacts').remove(paths).catch(() => {})
   }
 
   const { error } = await serviceSb.from('builds').delete().eq('id', buildId)
