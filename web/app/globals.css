@@ -10,8 +10,9 @@
         --card-foreground: 222 47% 11%;
         --popover: 0 0% 100%;
         --popover-foreground: 222 47% 11%;
-        --primary: 14 78% 55%;
+        --primary: 0 100% 16%;
         --primary-foreground: 0 0% 100%;
+        --primary-ink: 0 100% 16%;
         --secondary: 220 14% 96%;
         --secondary-foreground: 222 47% 11%;
         --muted: 220 14% 96%;
@@ -22,12 +23,12 @@
         --destructive-foreground: 0 0% 100%;
         --border: 220 13% 91%;
         --input: 220 13% 91%;
-        --ring: 14 78% 55%;
+        --ring: 0 100% 16%;
         --radius: 0.75rem;
         --sidebar-width: 240px;
-        --coral-start: 12 76% 52%;
-        --coral-mid: 18 85% 58%;
-        --coral-end: 28 90% 66%;
+        --coral-start: 0 100% 16%;
+        --coral-mid: 0 90% 22%;
+        --coral-end: 355 80% 28%;
         --chart-blue-start: 234 89% 62%;
         --chart-blue-end: 260 80% 68%;
     }
@@ -39,8 +40,10 @@
         --card-foreground: 214 32% 91%;
         --popover: 223 43% 9%;
         --popover-foreground: 214 32% 91%;
-        --primary: 14 78% 62%;
-        --primary-foreground: 222 47% 8%;
+        /* Fills stay official TAMU maroon (#500000); ink is a readable burgundy for text on dark surfaces */
+        --primary: 0 100% 16%;
+        --primary-foreground: 0 0% 100%;
+        --primary-ink: 0 92% 46%;
         --secondary: 224 35% 13%;
         --secondary-foreground: 214 32% 91%;
         --muted: 224 35% 11%;
@@ -51,10 +54,10 @@
         --destructive-foreground: 210 40% 98%;
         --border: 224 35% 16%;
         --input: 224 35% 11%;
-        --ring: 14 78% 62%;
-        --coral-start: 8 72% 48%;
-        --coral-mid: 14 80% 56%;
-        --coral-end: 26 88% 64%;
+        --ring: 0 92% 46%;
+        --coral-start: 0 100% 16%;
+        --coral-mid: 0 98% 19%;
+        --coral-end: 0 95% 23%;
         --chart-blue-start: 234 89% 68%;
         --chart-blue-end: 260 75% 72%;
     }
@@ -95,7 +98,7 @@
         border-radius: 10px;
     }
 
-    /* Coral brand gradient */
+    /* TAMU maroon brand gradient */
     .gradient-coral {
         background: linear-gradient(
             135deg,
@@ -124,9 +127,9 @@
             hsl(var(--coral-start) / 0.22) 0%,
             hsl(var(--coral-end) / 0.1) 100%
         );
-        border-color: hsl(var(--coral-start) / 0.28);
-        color: hsl(var(--coral-end));
-        box-shadow: 0 1px 8px hsl(var(--coral-start) / 0.12);
+        border-color: hsl(var(--primary-ink) / 0.35);
+        color: hsl(var(--primary-ink));
+        box-shadow: 0 1px 8px hsl(var(--primary) / 0.2);
     }
 
     .icon-box-coral {
@@ -223,7 +226,7 @@
         );
     }
 
-    /* Subtle coral glow on focus/active elements */
+    /* Subtle maroon glow on focus/active elements */
     .glow-sm {
         box-shadow: 0 0 12px hsl(var(--coral-start) / 0.2), 0 0 32px hsl(var(--coral-start) / 0.06);
     }
@@ -465,6 +468,35 @@
             opacity: 1;
             transform: scale(1.15);
         }
+    }
+
+    /*
+     * Dark mode ink: keep bg-primary / btn-coral on official maroon while
+     * text-primary and border-primary read clearly on dark surfaces.
+     */
+    .dark :is(.text-primary, .text-primary\/90, .hover\:text-primary\/80):not(.text-primary-foreground) {
+        color: hsl(var(--primary-ink) / var(--tw-text-opacity, 1));
+    }
+
+    .dark .hover\:text-primary:hover:not(.text-primary-foreground),
+    .dark .hover\:text-primary\/80:hover:not(.text-primary-foreground) {
+        color: hsl(var(--primary-ink) / var(--tw-text-opacity, 1));
+    }
+
+    .dark .group:hover .group-hover\:text-primary {
+        color: hsl(var(--primary-ink) / var(--tw-text-opacity, 1));
+    }
+
+    .dark .border-primary {
+        border-color: hsl(var(--primary-ink) / var(--tw-border-opacity, 1));
+    }
+
+    .dark :is(.bg-primary, .btn-coral).border-primary {
+        border-color: hsl(var(--primary) / var(--tw-border-opacity, 1));
+    }
+
+    .dark .ring-primary {
+        --tw-ring-color: hsl(var(--primary-ink) / var(--tw-ring-opacity, 1));
     }
 
     /* Reduced motion: strip transforms */
