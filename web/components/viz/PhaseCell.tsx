@@ -57,11 +57,11 @@ export function PhaseCell({ vizPhase, phaseKey, compact = false, compareMode = f
       <div
         className={cn(
           'px-3 py-2 border-b text-xs font-semibold flex items-center justify-between',
-          vizPhase.isComplete ? 'bg-green-50 text-green-800' : 'bg-muted/40 text-muted-foreground'
+          vizPhase.isComplete ? 'bg-emerald-500/10 text-emerald-400' : 'bg-muted/40 text-muted-foreground'
         )}
       >
         <span>{PHASE_DISPLAY[phaseKey]}</span>
-        {vizPhase.isComplete && <span className="text-green-600">&#10003;</span>}
+        {vizPhase.isComplete && <span className="text-emerald-400">&#10003;</span>}
       </div>
 
       {showNotes && (

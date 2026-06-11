@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { NavigationProgressBar } from "@/components/motion";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -28,7 +30,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased bg-background text-foreground`}
       >
-        {children}
+        <ThemeProvider>
+          <NavigationProgressBar>{children}</NavigationProgressBar>
+        </ThemeProvider>
       </body>
     </html>
   );

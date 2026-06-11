@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useAppRouter } from '@/components/motion'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { PHASE_IDS, PHASE_DISPLAY } from '@/lib/constants'
@@ -15,7 +15,7 @@ const MIN_PHASES = 2
 const MAX_PHASES = 4
 
 export function PhaseCompareSelector({ buildId }: PhaseCompareSelectorProps) {
-  const router = useRouter()
+  const router = useAppRouter()
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
   function togglePhase(phaseId: string) {
@@ -34,7 +34,10 @@ export function PhaseCompareSelector({ buildId }: PhaseCompareSelectorProps) {
     if (selected.size < MIN_PHASES) return
     const ordered = PHASE_IDS.filter(id => selected.has(id))
     const params = new URLSearchParams({ phases: ordered.join(',') })
-    router.push(`/builds/${buildId}/visualizations/compare?${params}`)
+    router.push(
+      `/builds/${buildId}/visualizations/compare?${params}`,
+      'Loading comparison view…'
+    )
   }
 
   const count = selected.size

@@ -1,14 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronDown, ChevronRight, CheckCircle2, Circle, Loader2 } from 'lucide-react'
+import { CheckCircle2, Circle } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { cn } from '@/lib/utils'
+import { AnimatedCollapsible, CollapsibleHeader, FuturisticLoader } from '@/components/motion'
 import { PHASE_DISPLAY } from '@/lib/constants'
 import { ArtifactToolbar } from './ArtifactToolbar'
 import { NotesPreview } from './NotesPreview'
 import { Badge } from '@/components/ui/badge'
-import type { VizPhase, ArtifactSummary } from '@/types/api'
+import type { VizPhase } from '@/types/api'
 import type { PhaseIdEnum, NotesJson } from '@/types/database'
 import type { ArtifactSummary as ViewerArtifactSummary } from '@/components/viewers/ViewerRegistry'
 
@@ -18,7 +19,7 @@ const ViewerRegistry = dynamic(
     ssr: false,
     loading: () => (
       <div className="h-48 flex items-center justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <FuturisticLoader size="md" />
       </div>
     ),
   }
@@ -61,7 +62,6 @@ export function VizPhasePanel({ vizPhase, phaseKey, defaultOpen = false }: VizPh
       .then(async (json) => {
         const art: FullArtifact = json.data
         setFullArtifact(art)
-        // Get signed URL
         const urlRes = await fetch(
           `/api/storage/sign-download?storagePath=${encodeURIComponent(art.storage_path)}`
         )
@@ -81,7 +81,6 @@ export function VizPhasePanel({ vizPhase, phaseKey, defaultOpen = false }: VizPh
     )
   })()
 
-  // Build the ViewerRegistry artifact shape
   const viewerArtifact: ViewerArtifactSummary | null = fullArtifact
     ? {
         id: fullArtifact.id,
@@ -95,22 +94,15 @@ export function VizPhasePanel({ vizPhase, phaseKey, defaultOpen = false }: VizPh
     : null
 
   return (
-    <div className="border rounded-lg overflow-hidden">
-      {/* Header */}
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-3 px-4 py-3 bg-card hover:bg-muted/30 transition-colors"
-      >
-        {open ? (
-          <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
-        ) : (
-          <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-        )}
+    <div className={cn(
+      'border rounded-xl overflow-hidden transition-all duration-300 ease-snappy',
+      open ? 'border-border/80 shadow-sm shadow-primary/5' : 'border-border/50 hover:border-border/70'
+    )}>
+      <CollapsibleHeader open={open} onClick={() => setOpen(!open)}>
         {vizPhase.isComplete ? (
-          <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+          <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
         ) : (
-          <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
+          <Circle className="h-4 w-4 text-muted-foreground/40 shrink-0" />
         )}
         <span className="font-medium text-sm text-left flex-1">
           {PHASE_DISPLAY[phaseKey]}
@@ -121,21 +113,21 @@ export function VizPhasePanel({ vizPhase, phaseKey, defaultOpen = false }: VizPh
             className={cn(
               'text-xs',
               vizPhase.isComplete
-                ? 'border-green-200 bg-green-50 text-green-700'
-                : 'border-muted text-muted-foreground'
+                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                : 'bg-muted/50 text-muted-foreground border-border/60'
             )}
           >
             {vizPhase.artifacts.length} artifact{vizPhase.artifacts.length !== 1 ? 's' : ''}
           </Badge>
         </div>
-      </button>
+      </CollapsibleHeader>
 
-      {open && (
-        <div className="border-t divide-y">
+      <AnimatedCollapsible open={open}>
+        <div className="border-t border-border/50 divide-y divide-border/50">
           {/* Notes preview */}
           {hasNotesContent && (
-            <div className="px-4 py-3 bg-muted/20">
-              <p className="text-xs font-medium text-muted-foreground mb-1">Notes</p>
+            <div className="px-4 py-3 bg-muted/10">
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">Notes</p>
               <NotesPreview notesJson={vizPhase.notesJson as NotesJson} maxBlocks={3} />
             </div>
           )}
@@ -143,7 +135,7 @@ export function VizPhasePanel({ vizPhase, phaseKey, defaultOpen = false }: VizPh
           {/* Artifact viewer */}
           <div className="p-4 space-y-4">
             {vizPhase.artifacts.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">
+              <p className="text-sm text-muted-foreground text-center py-8">
                 No artifacts in this phase
               </p>
             ) : (
@@ -164,7 +156,7 @@ export function VizPhasePanel({ vizPhase, phaseKey, defaultOpen = false }: VizPh
                 <div className="min-h-[200px]">
                   {loadingArtifact ? (
                     <div className="flex items-center justify-center h-48">
-                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                      <FuturisticLoader size="md" label="Loading artifact…" />
                     </div>
                   ) : viewerArtifact ? (
                     <ViewerRegistry
@@ -173,7 +165,7 @@ export function VizPhasePanel({ vizPhase, phaseKey, defaultOpen = false }: VizPh
                       signedUrl={signedUrl ?? undefined}
                     />
                   ) : (
-                    <p className="text-sm text-muted-foreground text-center py-6">
+                    <p className="text-sm text-muted-foreground text-center py-8">
                       Select an artifact to view
                     </p>
                   )}
@@ -182,7 +174,7 @@ export function VizPhasePanel({ vizPhase, phaseKey, defaultOpen = false }: VizPh
             )}
           </div>
         </div>
-      )}
+      </AnimatedCollapsible>
     </div>
   )
 }

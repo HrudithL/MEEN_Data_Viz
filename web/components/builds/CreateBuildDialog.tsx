@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useAppRouter } from '@/components/motion'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -21,7 +21,7 @@ interface CreateBuildDialogProps {
 }
 
 export function CreateBuildDialog({ orgId, trigger }: CreateBuildDialogProps) {
-  const router = useRouter()
+  const router = useAppRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -58,7 +58,7 @@ export function CreateBuildDialog({ orgId, trigger }: CreateBuildDialogProps) {
       if (!res.ok) throw new Error(json.error?.message ?? 'Failed to create build')
       setOpen(false)
       setForm({ name: '', description: '', material: '', process: '' })
-      router.push(`/builds/${json.data.id}`)
+      router.push(`/builds/${json.data.id}`, 'Loading build…')
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error creating build')

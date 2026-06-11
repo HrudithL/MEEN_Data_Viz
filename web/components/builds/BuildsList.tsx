@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { BuildCard } from '@/components/builds/BuildCard'
+import { Stagger } from '@/components/motion'
 import { BUILD_DATA_CHANGED } from '@/lib/build-data-events'
 import type { BuildWithProgress } from '@/lib/queries/builds'
 
@@ -39,7 +40,7 @@ export function BuildsList({ orgId, initialBuilds, canDelete = false }: BuildsLi
   }, [refresh])
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <Stagger className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" staggerMs={70}>
       {builds.map(build => (
         <BuildCard
           key={build.id}
@@ -48,6 +49,6 @@ export function BuildsList({ orgId, initialBuilds, canDelete = false }: BuildsLi
           onDeleted={() => setBuilds(prev => prev.filter(b => b.id !== build.id))}
         />
       ))}
-    </div>
+    </Stagger>
   )
 }

@@ -1,12 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useAppRouter } from '@/components/motion'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
-  const router = useRouter()
+  const router = useAppRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -35,7 +35,7 @@ export default function LoginPage() {
       return
     }
 
-    router.push('/dashboard')
+    router.push('/dashboard', 'Loading dashboard…')
     router.refresh()
   }
 
@@ -45,12 +45,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8">
-      <h2 className="text-xl font-semibold text-gray-900 mb-6">Sign in to your account</h2>
+    <div className="glass rounded-2xl p-8">
+      <h2 className="text-xl font-semibold text-foreground mb-6">Sign in to your account</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="email" className="block text-sm font-medium text-foreground/80 mb-1.5">
             Email address
           </label>
           <input
@@ -61,13 +61,13 @@ export default function LoginPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground input-glow focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             placeholder="you@example.com"
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="password" className="block text-sm font-medium text-foreground/80 mb-1.5">
             Password
           </label>
           <input
@@ -78,13 +78,13 @@ export default function LoginPage() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground input-glow focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             placeholder="••••••••"
           />
         </div>
 
         {error && (
-          <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+          <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-sm text-destructive animate-slide-down">
             {error}
           </div>
         )}
@@ -107,14 +107,14 @@ export default function LoginPage() {
               if (resetError) setError(resetError.message)
               else setResetMessage('Password reset email sent. Check your inbox.')
             }}
-            className="text-sm text-blue-600 hover:text-blue-500"
+            className="text-sm text-primary hover:text-primary/80 transition-colors"
           >
             Forgot password?
           </button>
         </div>
 
         {resetMessage && (
-          <div className="rounded-md bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700">
+          <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-sm text-emerald-400">
             {resetMessage}
           </div>
         )}
@@ -122,15 +122,15 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 ease-snappy glow-sm interactive active:scale-[0.98]"
         >
           {loading ? 'Signing in...' : 'Sign in'}
         </button>
       </form>
 
-      <p className="mt-4 text-center text-sm text-gray-600">
+      <p className="mt-5 text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{' '}
-        <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
+        <Link href="/signup" className="font-medium text-primary hover:text-primary/80 transition-colors">
           Sign up
         </Link>
       </p>

@@ -130,7 +130,7 @@ export default function AccountPage() {
               />
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
-            {message && <p className="text-sm text-green-600">{message}</p>}
+            {message && <p className="text-sm text-emerald-400">{message}</p>}
             <Button type="submit" disabled={saving}>
               {saving ? 'Saving...' : 'Save changes'}
             </Button>
@@ -148,7 +148,7 @@ export default function AccountPage() {
             Send reset email
           </Button>
           {resetSent && (
-            <p className="text-sm text-green-600">Password reset email sent to {email}</p>
+            <p className="text-sm text-emerald-400">Password reset email sent to {email}</p>
           )}
         </CardContent>
       </Card>

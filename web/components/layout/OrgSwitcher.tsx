@@ -35,7 +35,7 @@ export function OrgSwitcher({ orgs, activeOrgId, onSwitch }: OrgSwitcherProps) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger
-          className="flex items-center gap-2 h-9 max-w-[200px] px-3 rounded-lg border border-border bg-background text-sm font-medium hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex items-center gap-2 h-9 max-w-[200px] px-3 rounded-lg border border-border bg-background text-sm font-medium interactive-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
           <span className="truncate">

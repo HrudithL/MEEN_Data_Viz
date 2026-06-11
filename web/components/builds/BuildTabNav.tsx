@@ -36,8 +36,9 @@ export function BuildTabNav({ buildId }: BuildTabNavProps) {
           <Link
             key={tab.suffix}
             href={href}
+            data-nav-label={`Loading ${tab.label.toLowerCase()}…`}
             className={cn(
-              'px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px',
+              'px-4 py-2.5 text-sm font-medium border-b-2 transition-all duration-200 ease-snappy -mb-px interactive active:scale-[0.98]',
               active
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30'

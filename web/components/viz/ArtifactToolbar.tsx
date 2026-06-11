@@ -82,9 +82,9 @@ export function ArtifactToolbar({
               type="button"
               onClick={() => onTabChange(artifact.id)}
               className={cn(
-                'px-2.5 py-1 rounded text-xs font-medium transition-colors border',
+                'px-2.5 py-1 rounded text-xs font-medium transition-all duration-200 ease-snappy border interactive active:scale-[0.96]',
                 activeId === artifact.id
-                  ? 'bg-primary text-primary-foreground border-primary'
+                  ? 'bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/20 scale-[1.02]'
                   : 'bg-background text-muted-foreground border-border hover:bg-accent hover:text-foreground'
               )}
             >

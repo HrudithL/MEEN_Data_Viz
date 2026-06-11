@@ -18,10 +18,10 @@ export function ModeToggle({ mode, onChange }: ModeToggleProps) {
           type="button"
           onClick={() => onChange(m)}
           className={cn(
-            'px-4 py-1.5 text-sm font-medium rounded transition-colors',
+            'px-4 py-1.5 text-sm font-medium rounded transition-all duration-200 ease-snappy interactive active:scale-[0.97]',
             mode === m
-              ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
+              ? 'bg-background text-foreground shadow-sm scale-[1.02]'
+              : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
           )}
         >
           {m === 'by_phase' ? 'By Phase' : 'Compare'}

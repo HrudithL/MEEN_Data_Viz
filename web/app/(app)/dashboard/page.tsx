@@ -76,12 +76,12 @@ export default async function DashboardPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <p className="text-sm text-muted-foreground">
             {orgs.find(o => o.id === activeOrgId)?.name ?? 'Overview'}
           </p>
+          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
         </div>
-        <Button render={<Link href="/builds" />}>
+        <Button className="btn-coral" render={<Link href="/builds" />}>
             View Builds
           </Button>
       </div>
@@ -93,10 +93,10 @@ export default async function DashboardPage({
             <a
               key={org.id}
               href={`/dashboard?org=${org.id}`}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ease-snappy interactive active:scale-[0.97] ${
                 org.id === activeOrgId
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-accent'
+                  ? 'btn-coral'
+                  : 'bg-muted text-muted-foreground hover:bg-accent hover:scale-[1.02]'
               }`}
             >
               {org.name}
@@ -112,9 +112,9 @@ export default async function DashboardPage({
         inProgressBuilds={data.inProgressBuilds}
       />
 
-      <div className="rounded-lg border p-4">
+      <div className="relative rounded-xl bg-card card-pattern p-6 ring-1 ring-foreground/10">
         <p className="text-sm text-muted-foreground">Total Artifacts</p>
-        <p className="text-2xl font-bold mt-1">{data.totalArtifacts}</p>
+        <p className="text-3xl font-bold mt-1 tabular-nums">{data.totalArtifacts}</p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
