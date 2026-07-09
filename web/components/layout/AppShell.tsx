@@ -74,7 +74,7 @@ export function AppShell({ children, orgs, userEmail, userDisplayName }: AppShel
           <Atom className="h-4 w-4 text-primary" />
         </div>
         {!collapsed && (
-          <span className="font-bold text-base tracking-tight gradient-text">MEEN Data</span>
+          <span className="font-bold text-base tracking-tight gradient-text">M4 Data Viz</span>
         )}
       </div>
 
