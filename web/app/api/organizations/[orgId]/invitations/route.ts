@@ -68,10 +68,10 @@ export async function POST(
     await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
-      subject: `You've been invited to join ${org?.name ?? 'an organization'} on MEEN Data Viz`,
+      subject: `You've been invited to join ${org?.name ?? 'an organization'} on M4 Data Viz`,
       html: `
         <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto;">
-          <h2 style="color: #1d4ed8;">MEEN Data Viz Invitation</h2>
+          <h2 style="color: #1d4ed8;">M4 Data Viz Invitation</h2>
           <p>You've been invited to join <strong>${org?.name ?? 'an organization'}</strong> as a <strong>${role}</strong>.</p>
           <p>This invitation expires in 7 days.</p>
           <a href="${inviteUrl}" style="display:inline-block;background:#1d4ed8;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;margin:16px 0;">

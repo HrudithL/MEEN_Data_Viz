@@ -16,7 +16,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "MEEN Data Viz — Materials Science Experiment Platform",
+  title: "M4 Data Viz — Materials Science Experiment Platform",
   description: "Visualize and analyze materials science experimental data across all build phases.",
 };
 

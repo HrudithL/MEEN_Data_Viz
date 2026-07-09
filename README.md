@@ -1,4 +1,4 @@
-# MEEN Data Viz
+# M4 Data Viz
 
 Web platform for additive manufacturing (AM) experiment workflows. Organize experimental campaigns as **Builds**, capture data across nine sequential phases, version artifacts, and explore results through interactive visualizations.
 

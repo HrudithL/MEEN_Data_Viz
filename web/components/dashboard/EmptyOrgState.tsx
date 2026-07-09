@@ -26,7 +26,7 @@ export function EmptyOrgState({ defaultOpen = false }: EmptyOrgStateProps) {
           <Building2 className="h-10 w-10 text-primary" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold mb-2">Welcome to MEEN Data Viz</h2>
+          <h2 className="text-2xl font-bold mb-2">Welcome to M4 Data Viz</h2>
           <p className="text-muted-foreground max-w-md">
             Create your first organization to start managing materials science experiment builds.
           </p>

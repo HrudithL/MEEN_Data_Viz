@@ -224,7 +224,7 @@ export function AppShell({ children, orgs, userEmail, userDisplayName }: AppShel
               <Menu className="h-5 w-5" />
             </Button>
             <span className="text-sm text-muted-foreground hidden sm:block font-medium">
-              {activeOrg?.name ?? 'MEEN Data Viz'}
+              {activeOrg?.name ?? 'M4 Data Viz'}
             </span>
           </div>
         </header>

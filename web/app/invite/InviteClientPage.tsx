@@ -107,7 +107,7 @@ export default function InviteClientPage({
         <div className="min-h-screen flex items-center justify-center auth-bg px-4 py-12">
             <AuthEnter className="w-full max-w-md space-y-4">
                 <div className="text-center mb-6">
-                    <h1 className="text-2xl font-bold gradient-text">MEEN Data Viz</h1>
+                    <h1 className="text-2xl font-bold gradient-text">M4 Data Viz</h1>
                 </div>
 
                 {/* Invite banner */}
